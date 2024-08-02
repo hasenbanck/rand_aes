@@ -1,0 +1,190 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  check:
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            channel: stable
+
+          - name: Linux riscv64gc
+            os: ubuntu-24.04
+            target: riscv64gc-unknown-linux-gnu
+            channel: nightly
+
+          - name: MacOS aarch64
+            os: macos-latest
+            target: aarch64-apple-darwin
+            channel: stable
+
+    name: Clippy ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          rustup toolchain install ${{ matrix.channel }} --no-self-update --profile=minimal --component clippy --target ${{ matrix.target }}
+          rustup override set ${{ matrix.channel }}
+          cargo -V
+
+      - name: Caching
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: check-${{ matrix.target }}
+
+      - name: Run clippy
+        shell: bash
+        run: |
+          set -e
+
+          # Check with no features
+          cargo clippy --target ${{ matrix.target }} --no-default-features
+
+          # Check with default features
+          cargo clippy --target ${{ matrix.target }}
+
+  test:
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+
+          - name: MacOS aarch64
+            os: macos-latest
+            target: aarch64-apple-darwin
+
+    name: Test ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    needs: [ check ]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          rustup toolchain install stable --no-self-update --profile=minimal
+          cargo -V
+
+      - name: Caching
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: test-${{ matrix.target }}
+
+      - name: Tests (default)
+        shell: bash
+        run: |
+          set -e
+          cargo test
+
+      - name: Tests (force_fallback)
+        shell: bash
+        run: |
+          set -e
+          cargo test --features=force_fallback
+
+      - name: Tests (force_no_runtime_detection)
+        shell: bash
+        run: |
+          set -e
+          cargo test --features=force_fallback,force_no_runtime_detection
+
+      - name: Tests no-std
+        shell: bash
+        run: |
+          set -e
+          cargo test --no-default-features
+
+      - name: Tests no-std (force_fallback)
+        shell: bash
+        run: |
+          set -e
+          cargo test --no-default-features --features=force_fallback
+
+      - name: Tests no-std (force_no_runtime_detection)
+        shell: bash
+        run: |
+          set -e
+          cargo test --no-default-features --features=force_fallback,force_no_runtime_detection
+
+  verification:
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: aarch64
+            arch: aarch64
+            target: aarch64-unknown-linux-gnu
+            channel: stable
+            cpu: a64fx
+          - name: riscv64
+            arch: riscv64
+            target: riscv64gc-unknown-linux-gnu
+            channel: nightly
+            cpu: rv64,zicsr=true,f=true,d=true,v=true,zba=true,vlen=128,zk=true,zkn=true,zkne=true,zknd=true,zknh=true
+          - name: x86_64
+            arch: x86-64
+            target: x86_64-unknown-linux-gnu
+            channel: stable
+            cpu: Westmere
+
+    name: Validate ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    needs: [ check ]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: qemu-user qemu-user-static gcc-${{ matrix.arch }}-linux-gnu
+          version: 1.0
+
+      - name: Install toolchain
+        run: |
+          rustup toolchain install ${{ matrix.channel }} --no-self-update --profile=minimal --target ${{ matrix.target }}
+          rustup override set ${{ matrix.channel }}
+          cargo -V
+
+      - uses: cargo-bins/cargo-binstall@main
+
+      - name: Install Cross
+        run: |
+          cargo binstall cross@0.2.5 --no-confirm
+
+      - name: Build ${{ matrix.target }}
+        shell: bash
+        run: |
+          set -e
+          cross build --release --target=${{ matrix.target }} --bin=verification --no-default-features --features=verification
+
+      - name: Run verification
+        shell: bash
+        run: |
+          set -e
+          qemu-${{ matrix.name }} -L /usr/${{ matrix.arch }}-linux-gnu -cpu ${{ matrix.cpu }} ./target/${{ matrix.target }}/release/verification

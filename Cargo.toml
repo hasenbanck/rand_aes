@@ -1,0 +1,54 @@
+[package]
+name = "rand_aes"
+description = "AES based pseudo-random number generator."
+authors = ["Nils Hasenbanck <nils@hasenbanck.de>"]
+keywords = ["rand", "random", "no-std", "aes"]
+categories = ["algorithms", "no-std"]
+license = "Apache-2.0"
+readme = "README.md"
+documentation = "https://docs.rs/rand_aes"
+repository = "https://github.com/hasenbanck/rand_aes"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.80"
+
+[features]
+default = ["std", "tls", "getrandom", "rand_core"]
+# Used for TLS and runtime target feature detection.
+std = []
+# Activates the thread local functionality.
+tls = ["std"]
+### The following features are mainly used for CI testing ###
+# Forces the compiler to always use the fallback (never using the hardware AES directly).
+force_fallback = []
+# Deactivates the runtime target feature detection. Combined with `force_fallback` this forced to always using the software AES.
+force_no_runtime_detection = []
+# Enables some functionality used for the verification executable used in CI.
+verification = []
+
+[dependencies]
+# Implements the `CoreRng` and `SeedableRng` traits.
+rand_core = { version = "0.6", optional = true }
+# Provides seeding from the OS entropy source.
+getrandom = { version = "0.2", optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+hex-literal = "0.4"
+paste = "1"
+
+[profile.bench]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+strip = true
+
+[[bench]]
+name = "rng"
+harness = false
+
+[package.metadata."docs.rs"]
+all-features = true
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(doc_cfg)'] }
