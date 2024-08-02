@@ -1,4 +1,4 @@
-//! The static fallback, when STD is not available or the platform has no hardware based AES support.
+//! The fixed fallback, when STD is not available or the platform has no hardware based AES support.
 use core::cell::RefCell;
 
 use super::software::Aes128Ctr128 as Aes128Ctr128Fallback;

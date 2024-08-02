@@ -1,4 +1,4 @@
-//! The dynamic fallback, when STD is available or the platform has hardware based AES support.
+//! The runtime fallback, when STD is available or the platform has hardware based AES support.
 use core::cell::RefCell;
 
 use crate::hardware::{
