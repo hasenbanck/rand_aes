@@ -18,7 +18,8 @@ default = ["std", "tls", "getrandom", "rand_core"]
 std = []
 # Activates the thread local functionality.
 tls = ["std"]
-### The following features are mainly used for CI testing ###
+
+### The following features are only used internally and are unstable ###
 # Forces the compiler to always use the fallback (never using the hardware AES directly).
 force_fallback = []
 # Deactivates the runtime target feature detection. Combined with `force_fallback` this forced to always using the software AES.
