@@ -6,18 +6,20 @@ set -euo pipefail
 #   2. qemu-user
 #   3. gcc-{arch}-linux-gnu
 
+set +u
 if [ -z "$1" ]; then
     echo "Usage: $0 <architecture>"
     echo "Supported architectures: aarch64, riscv64, x86_64"
     exit 1
 fi
+set -u
 
 readonly ARCH=$1
 
 case $ARCH in
     "aarch64")
         CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc cargo build --release --target=aarch64-unknown-linux-gnu --bin=verification --no-default-features --features=verification
-        qemu-aarch64 -cpu a64fx -L /usr/aarch64-linux-gnu ./target/aarch64-unknown-linux-gnu/release/verification
+        qemu-aarch64 -cpu cortex-a35 -L /usr/aarch64-linux-gnu ./target/aarch64-unknown-linux-gnu/release/verification
         ;;
     "riscv64")
         CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc cargo +nightly build --release --target=riscv64gc-unknown-linux-gnu --bin=verification --no-default-features --features=verification
