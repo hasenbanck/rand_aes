@@ -13,24 +13,37 @@ use crate::hardware::Aes256Ctr64 as Aes256Ctr64Hardware;
 /// Runs the verification testsuite. Will panic once it finds an error.
 #[doc(hidden)]
 pub fn run_verification() {
+    println!("Verifying Aes128Ctr64");
     for i in 0..u8::MAX {
         for j in 0..u8::MAX {
-            verify_aes128([i; AES128_KEY_SIZE], [j; AES_BLOCK_SIZE]);
-            verify_aes256([i; AES256_KEY_SIZE], [j; AES_BLOCK_SIZE]);
-            verify_aes128([i; AES128_KEY_SIZE], [j; AES_BLOCK_SIZE]);
-            verify_aes256([i; AES256_KEY_SIZE], [j; AES_BLOCK_SIZE]);
+            verify_aes128_ctr64([i; AES128_KEY_SIZE], [j; AES_BLOCK_SIZE]);
         }
     }
-}
+    println!("Finished Aes128Ctr64");
 
-fn verify_aes128(key: [u8; AES128_KEY_SIZE], iv: [u8; AES_BLOCK_SIZE]) {
-    verify_aes128_ctr64(key, iv);
-    verify_aes128_ctr128(key, iv);
-}
+    println!("Verifying Aes128Ctr128");
+    for i in 0..u8::MAX {
+        for j in 0..u8::MAX {
+            verify_aes128_ctr128([i; AES128_KEY_SIZE], [j; AES_BLOCK_SIZE]);
+        }
+    }
+    println!("Finished Aes128Ctr128");
 
-fn verify_aes256(key: [u8; AES256_KEY_SIZE], iv: [u8; AES_BLOCK_SIZE]) {
-    verify_aes256_ctr64(key, iv);
-    verify_aes256_ctr128(key, iv);
+    println!("Verifying Aes245Ctr64");
+    for i in 0..u8::MAX {
+        for j in 0..u8::MAX {
+            verify_aes256_ctr64([i; AES256_KEY_SIZE], [j; AES_BLOCK_SIZE]);
+        }
+    }
+    println!("Finished Aes256Ctr64");
+
+    println!("Verifying Aes256Ctr128");
+    for i in 0..u8::MAX {
+        for j in 0..u8::MAX {
+            verify_aes256_ctr128([i; AES256_KEY_SIZE], [j; AES_BLOCK_SIZE]);
+        }
+    }
+    println!("Finished Aes256Ctr128");
 }
 
 fn verify_aes128_ctr64(key: [u8; AES128_KEY_SIZE], iv: [u8; AES_BLOCK_SIZE]) {
