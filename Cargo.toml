@@ -24,7 +24,7 @@ force_fallback = []
 # Deactivates the runtime target feature detection. Combined with `force_fallback` this forced to always using the software AES.
 force_no_runtime_detection = []
 # Enables some functionality used for the verification executable used in CI.
-verification = []
+verification = ["std"]
 
 [dependencies]
 # Implements the `CoreRng` and `SeedableRng` traits.
