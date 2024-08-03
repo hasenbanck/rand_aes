@@ -145,12 +145,10 @@ jobs:
             arch: riscv64
             target: riscv64gc-unknown-linux-gnu
             channel: nightly
-            cpu: rv64,zicsr=true,f=true,d=true,v=true,zba=true,vlen=128,zk=true,zkn=true,zkne=true,zknd=true,zknh=true
           - name: x86_64
             arch: x86-64
             target: x86_64-unknown-linux-gnu
             channel: stable
-            cpu: Westmere
 
     name: Validate ${{ matrix.name }}
     runs-on: ubuntu-24.04
@@ -171,20 +169,14 @@ jobs:
           rustup override set ${{ matrix.channel }}
           cargo -V
 
-      - uses: cargo-bins/cargo-binstall@main
-
-      - name: Install Cross
-        run: |
-          cargo binstall cross@0.2.5 --no-confirm
-
-      - name: Build ${{ matrix.target }}
-        shell: bash
-        run: |
-          set -e
-          cross build --release --target=${{ matrix.target }} --bin=verification --no-default-features --features=verification
+      - name: Caching
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: verification-${{ matrix.target }}
 
       - name: Run verification
         shell: bash
         run: |
           set -e
-          qemu-${{ matrix.name }} -L /usr/${{ matrix.arch }}-linux-gnu -cpu ${{ matrix.cpu }} ./target/${{ matrix.target }}/release/verification
+          chmod +x scripts/run_verification.sh
+          ./scripts/run_verification.sh ${{ matrix.name }}

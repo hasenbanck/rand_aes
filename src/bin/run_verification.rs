@@ -1,5 +1,7 @@
 #[allow(unreachable_code)]
 fn main() {
+    println!("Starting verification");
+
     #[cfg(feature = "verification")]
     rand_aes::verification::run_verification();
 
