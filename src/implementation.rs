@@ -1,6 +1,7 @@
-use crate::{
-    secure_bytes, seeds, Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64, Jump, Random,
-};
+use crate::{seeds, Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64, Jump, Random};
+
+#[cfg(feature = "getrandom")]
+use crate::secure_bytes;
 
 macro_rules! safely_call {
     ($what:expr) => {
