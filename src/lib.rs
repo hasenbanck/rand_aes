@@ -145,6 +145,7 @@
 // TODO consider 32-bit versions?
 
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(feature = "verification", allow(unused))]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![cfg_attr(target_arch = "riscv64", feature(riscv_ext_intrinsics))]
 
