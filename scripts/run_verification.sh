@@ -21,7 +21,7 @@ case $ARCH in
         ;;
     "riscv64")
         CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc cargo +nightly build --release --target=riscv64gc-unknown-linux-gnu --bin=verification --no-default-features --features=verification
-        qemu-riscv64 -cpu rv64,zicsr=true,f=true,d=true,v=true,zba=true,vlen=128,zk=true,zkn=true,zkne=true,zknd=true,zknh=true -L /usr/riscv64-linux-gnu ./target/riscv64gc-unknown-linux-gnu/release/verification
+        qemu-riscv64 -cpu rv64,zk=true -L /usr/riscv64-linux-gnu ./target/riscv64gc-unknown-linux-gnu/release/verification
         ;;
     "x86_64")
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --target=x86_64-unknown-linux-gnu --bin=verification --no-default-features --features=verification
