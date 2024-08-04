@@ -33,7 +33,7 @@ pub unsafe fn run_verification() {
     }
     println!("Finished Aes128Ctr128");
 
-    println!("Verifying Aes245Ctr64");
+    println!("Verifying Aes256Ctr64");
     for i in 0..u8::MAX {
         for j in 0..u8::MAX {
             verify_aes256_ctr64([i; AES256_KEY_SIZE], [j; AES_BLOCK_SIZE]);
