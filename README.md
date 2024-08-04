@@ -65,9 +65,9 @@ AES-256 uses 14 rounds.
 We provide a software implementation of AES in case there is no hardware accelerated AES provided. We provide hardware
 accelerated versions for the following architectures:
 
-- aarch64
-- riscv64
-- x86_64
+- aarch64: Support since Cortex-A53 (2012).
+- riscv64: Must support the scalar based cryptography extension (zk).
+- x86_64: Support since Intel's Westmere (2010) and AMD's Bulldozer (2011).
 
 riscv64 needs nightly Rust, since the AES intrinsics are not marked as stable yet.
 
