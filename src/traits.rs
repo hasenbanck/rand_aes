@@ -72,6 +72,20 @@ pub trait Jump {
     /// Note: 2^64 is approximately 18.4 quintillion (1.84 × 10^19).
     /// For perspective, if you generated 1 billion numbers per second,
     /// it would take about 584 years to generate 2^64 numbers.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use rand_aes::*;
+    ///
+    /// let mut rng1 = Aes128Ctr128::from_entropy();
+    /// let mut rng2 = rng1.long_jump(); // Returns a clone and advances rng1 by 2^64 steps
+    /// let mut rng3 = rng1.long_jump(); // Returns a clone and advances rng1 by additional 2^64 steps
+    ///
+    /// // Counter(rng1) = N + 2 * 2^64
+    /// // Counter(rng2) = N
+    /// // Counter(rng3) = N + 2^64
+    /// ```
     fn jump(&self) -> Self;
 
     /// Returns a clone of this RNG and advances the counter of itself by 2^96, equivalent to
@@ -82,6 +96,19 @@ pub trait Jump {
     /// Note: 2^96 is approximately 79 octillion (7.9 × 10^28).
     /// At 1 billion numbers per second, it would take about 2.5 trillion years
     /// to generate 2^96 numbers, far exceeding the age of the universe.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// use rand_aes::*;
+    ///
+    /// let mut rng1 = Aes128Ctr128::from_entropy();
+    /// let mut rng2 = rng1.long_jump(); // Returns a clone and advances rng1 by 2^96 steps
+    /// let mut rng3 = rng1.long_jump(); // Returns a clone and advances rng1 by further 2^96 steps
+    ///
+    /// // Counter(rng1) = N + 2 * 2^96
+    /// // Counter(rng2) = N
+    /// // Counter(rng3) = N + 2^96///
     fn long_jump(&self) -> Self;
 }
 

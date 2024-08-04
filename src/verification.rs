@@ -11,8 +11,12 @@ use crate::hardware::Aes256Ctr128 as Aes256Ctr128Hardware;
 use crate::hardware::Aes256Ctr64 as Aes256Ctr64Hardware;
 
 /// Runs the verification testsuite. Will panic once it finds an error.
+///
+/// This function is unsafe, since we don't properly gate the function behind compiletime or
+/// runtime based checks if the hardware based AES features are available. This function is not
+/// supposed to be used by the user and is behind an internal feature flag.   
 #[doc(hidden)]
-pub fn run_verification() {
+pub unsafe fn run_verification() {
     println!("Verifying Aes128Ctr64");
     for i in 0..u8::MAX {
         for j in 0..u8::MAX {

@@ -14,9 +14,10 @@ impl Aes128Ctr64Seed {
         seed[..16].copy_from_slice(&key);
         seed[16..24].copy_from_slice(&nonce);
         seed[24..32].copy_from_slice(&counter.to_le_bytes());
-        Aes128Ctr64Seed(seed)
+        Self(seed)
     }
 
+    /// Creates a new seed from the OS provided entropy source.
     #[cfg(feature = "getrandom")]
     pub fn from_entropy() -> Self {
         Aes128Ctr64Seed(secure_bytes())
@@ -51,9 +52,10 @@ impl Aes128Ctr128Seed {
         let mut seed = [0u8; 32];
         seed[..16].copy_from_slice(&key);
         seed[16..32].copy_from_slice(&counter.to_le_bytes());
-        Aes128Ctr128Seed(seed)
+        Self(seed)
     }
 
+    /// Creates a new seed from the OS provided entropy source.
     #[cfg(feature = "getrandom")]
     pub fn from_entropy() -> Self {
         Aes128Ctr128Seed(secure_bytes())
@@ -89,9 +91,10 @@ impl Aes256Ctr64Seed {
         seed[..32].copy_from_slice(&key);
         seed[32..40].copy_from_slice(&nonce);
         seed[40..48].copy_from_slice(&counter.to_le_bytes());
-        Aes256Ctr64Seed(seed)
+        Self(seed)
     }
 
+    /// Creates a new seed from the OS provided entropy source.
     #[cfg(feature = "getrandom")]
     pub fn from_entropy() -> Self {
         Aes256Ctr64Seed(secure_bytes())
@@ -132,9 +135,10 @@ impl Aes256Ctr128Seed {
         let mut seed = [0u8; 48];
         seed[..32].copy_from_slice(&key);
         seed[32..48].copy_from_slice(&counter.to_le_bytes());
-        Aes256Ctr128Seed(seed)
+        Self(seed)
     }
 
+    /// Creates a new seed from the OS provided entropy source.
     #[cfg(feature = "getrandom")]
     pub fn from_entropy() -> Self {
         Aes256Ctr128Seed(secure_bytes())
