@@ -1,14 +1,11 @@
 use rand_aes::seeds::*;
 use rand_aes::*;
 
-// TODO add a test for the TLS functionality.
-// TODO add a test for each implementation.
-
 macro_rules! test_range {
     ($name:ident, $method:ident, $range:expr) => {
         #[test]
         fn $name() {
-            let prng: Aes128Ctr128 = Random::from_seed(Aes128Ctr128Seed::default());
+            let prng: Aes256Ctr64 = Random::from_seed(Aes256Ctr64Seed::default());
             for _ in 0..1000 {
                 let value = prng.$method($range.clone());
                 assert!(
@@ -37,7 +34,7 @@ macro_rules! test_mod {
     ($name:ident, $method:ident, $max:expr) => {
         #[test]
         fn $name() {
-            let prng = Aes128Ctr128::from_seed(Aes128Ctr128Seed::default());
+            let prng = Aes256Ctr64::from_seed(Aes256Ctr64Seed::default());
             for _ in 0..1000 {
                 let value = prng.$method($max);
                 assert!(
@@ -61,7 +58,7 @@ macro_rules! test_primitive_integer {
     ($name:ident, $method:ident) => {
         #[test]
         fn $name() {
-            let prng = Aes128Ctr128::from_seed(Aes128Ctr128Seed::default());
+            let prng = Aes256Ctr64::from_seed(Aes256Ctr64Seed::default());
             for _ in 0..1000 {
                 let _value = prng.$method();
             }
@@ -82,7 +79,7 @@ test_primitive_integer!(test_prng_isize, isize);
 
 #[test]
 fn test_prng_bool() {
-    let prng = Aes128Ctr128::from_seed(Aes128Ctr128Seed::default());
+    let prng = Aes256Ctr64::from_seed(Aes256Ctr64Seed::default());
     let mut true_count = 0;
     let mut false_count = 0;
     for _ in 0..1000 {
@@ -99,7 +96,7 @@ fn test_prng_bool() {
 
 #[test]
 fn test_prng_f32() {
-    let prng = Aes128Ctr128::from_seed(Aes128Ctr128Seed::default());
+    let prng = Aes256Ctr64::from_seed(Aes256Ctr64Seed::default());
     for _ in 0..1000 {
         let value = prng.f32();
         assert!(
@@ -111,7 +108,7 @@ fn test_prng_f32() {
 
 #[test]
 fn test_prng_f64() {
-    let prng = Aes128Ctr128::from_seed(Aes128Ctr128Seed::default());
+    let prng = Aes256Ctr64::from_seed(Aes256Ctr64Seed::default());
     for _ in 0..1000 {
         let value = prng.f64();
         assert!(
@@ -123,7 +120,7 @@ fn test_prng_f64() {
 
 #[test]
 fn test_prng_fill_bytes() {
-    let prng = Aes128Ctr128::from_seed(Aes128Ctr128Seed::default());
+    let prng = Aes256Ctr64::from_seed(Aes256Ctr64Seed::default());
     let mut bytes = [0u8; 16];
     prng.fill_bytes(&mut bytes);
     assert!(
@@ -134,7 +131,7 @@ fn test_prng_fill_bytes() {
 
 #[test]
 fn test_prng_shuffle() {
-    let prng = Aes128Ctr128::from_seed(Aes128Ctr128Seed::default());
+    let prng = Aes256Ctr64::from_seed(Aes256Ctr64Seed::default());
     let mut array = [0usize; 256];
     for (i, x) in array.as_mut_slice().iter_mut().enumerate() {
         *x = i;
