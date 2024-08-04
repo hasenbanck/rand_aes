@@ -78,13 +78,14 @@ pub trait Jump {
     /// ```ignore
     /// use rand_aes::*;
     ///
-    /// let mut rng1 = Aes128Ctr128::from_entropy();
-    /// let mut rng2 = rng1.long_jump(); // Returns a clone and advances rng1 by 2^64 steps
-    /// let mut rng3 = rng1.long_jump(); // Returns a clone and advances rng1 by additional 2^64 steps
+    /// let mut rng0 = Aes128Ctr128::from_entropy();
+    /// let mut rng1 = rng1.long_jump(); // Returns a clone and advances rng0 by 2^64 steps
+    /// let mut rng2 = rng1.long_jump(); // Returns a clone and advances rng0 by additional 2^64 steps
     ///
-    /// // Counter(rng1) = N + 2 * 2^64
-    /// // Counter(rng2) = N
-    /// // Counter(rng3) = N + 2^64
+    /// let period = 1u128 << 64;
+    /// assert_eq!(rng1.counter(), 0);
+    /// assert_eq!(rng2.counter(), period);
+    /// assert_eq!(rng0.counter(), period * 2);
     /// ```
     fn jump(&self) -> Self;
 
@@ -102,13 +103,14 @@ pub trait Jump {
     /// ```ignore
     /// use rand_aes::*;
     ///
-    /// let mut rng1 = Aes128Ctr128::from_entropy();
-    /// let mut rng2 = rng1.long_jump(); // Returns a clone and advances rng1 by 2^96 steps
-    /// let mut rng3 = rng1.long_jump(); // Returns a clone and advances rng1 by further 2^96 steps
+    /// let mut rng0 = Aes128Ctr128::from_entropy();
+    /// let mut rng1 = rng1.long_jump(); // Returns a clone and advances rng1 by 2^96 steps
+    /// let mut rng2 = rng1.long_jump(); // Returns a clone and advances rng1 by further 2^96 steps
     ///
-    /// // Counter(rng1) = N + 2 * 2^96
-    /// // Counter(rng2) = N
-    /// // Counter(rng3) = N + 2^96///
+    /// let period = 1u128 << 96;
+    /// assert_eq!(rng1.counter(), 0);
+    /// assert_eq!(rng2.counter(), period);
+    /// assert_eq!(rng0.counter(), period * 2);
     fn long_jump(&self) -> Self;
 }
 

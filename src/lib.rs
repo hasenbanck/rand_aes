@@ -22,28 +22,37 @@
 //!
 //! Use the following target features for optimal performance:
 //!
-//! - aarch64: "aes" (using the cryptographic extension)
-//! - riscv64: "zkne" (using the scalar based cryptography extension)
-//! - x86_64: "aes" (using AES-NI)
+//! - aarch64: `aes` (using the cryptographic extension)
+//! - riscv64: `zkne` (using the scalar based cryptography extension)
+//! - x86_64: `aes` (using AES-NI)
+//!
+//! ## Security Note
+//!
+//! While based on well-established cryptographic primitives, this PRNG is not intended for cryptographic key generation
+//! or other sensitive cryptographic operations, simply because safe, automatic re-seeding is not provided. We tested its
+//! statistical qualities by running versions with reduced rounds against `practrand` and `TESTu01`'s Big Crush.
+//! A version with just 3 rounds of AES encryption rounds passes the `practrand` tests with at least 16 TB.
+//! `TESTu01`'s Big Crush requires at least 5 rounds to be successfully cleared. AES-128 uses 10 rounds, whereas
+//! AES-256 uses 14 rounds.
 //!
 //! ## Parallel Stream Generation
 //!
-//! The 128-bit counter RNG support efficient parallel stream generation through the [`Jump`] trait.
+//! The 128-bit counter PRNG support efficient parallel stream generation through the [`Jump`] trait.
 //! The provided functions allow you to create multiple independent streams of random numbers, which
 //! is particularly useful for parallel or distributed computations. The API is designed to easily
 //! create new random number generators for child threads / tasks from a base instance.
 //!
 //! ### Jump Function
 //!
-//! The [`Jump::jump()`] function advances the RNG counter by 2^64 steps. It can be used to create
+//! The [`Jump::jump()`] function advances the PRNG counter by 2^64 steps. It can be used to create
 //! up to 2^64 non-overlapping subsequences.
 //!
 //! ### Long Jump Function
 //!
-//! The [`Jump::long_jump()`] function advances the RNG counter by 2^96 steps. This allows for even
+//! The [`Jump::long_jump()`] function advances the PRNG counter by 2^96 steps. This allows for even
 //! larger separations between subsequences, useful for creating up to 2^32 independent streams.
 //!
-//! These functions are particularly useful in scenarios requiring multiple independent RNG streams,
+//! These functions are particularly useful in scenarios requiring multiple independent PRNG streams,
 //! such as parallel Monte Carlo simulations or distributed computing tasks.
 
 #![cfg_attr(docsrs, feature(doc_cfg))]

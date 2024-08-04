@@ -128,7 +128,7 @@ pub fn rand_fill_bytes(slice: &mut [u8]) {
 /// Generates a random `u8` value in the range of 0..n.
 ///
 /// # Notice
-/// This has a very slight bias. Use [`crate::range_u8()`] instead for no bias.
+/// This has a very slight bias. Use [`range_u8()`] instead for no bias.
 #[cfg_attr(doc_cfg, doc(cfg(feature = "tls")))]
 pub fn rand_mod_u8(n: u8) -> u8 {
     RNG.with(|rng| rng.mod_u8(n))
@@ -137,7 +137,7 @@ pub fn rand_mod_u8(n: u8) -> u8 {
 /// Generates a random `u16` value in the range of 0..n.
 ///
 /// # Notice
-/// This has a very slight bias. Use [`crate::rand_range_u16()`] instead for no bias.
+/// This has a very slight bias. Use [`rand_range_u16()`] instead for no bias.
 #[cfg_attr(doc_cfg, doc(cfg(feature = "tls")))]
 pub fn rand_mod_u16(n: u16) -> u16 {
     RNG.with(|rng| rng.mod_u16(n))
@@ -146,7 +146,7 @@ pub fn rand_mod_u16(n: u16) -> u16 {
 /// Generates a random `u32` value in the range of 0..n.
 ///
 /// # Notice
-/// This has a very slight bias. Use [`crate::rand_range_u32()`] instead for no bias.
+/// This has a very slight bias. Use [`rand_range_u32()`] instead for no bias.
 #[cfg_attr(doc_cfg, doc(cfg(feature = "tls")))]
 pub fn rand_mod_u32(n: u32) -> u32 {
     RNG.with(|rng| rng.mod_u32(n))
@@ -155,7 +155,7 @@ pub fn rand_mod_u32(n: u32) -> u32 {
 /// Generates a random `u64` value in the range of 0..n.
 ///
 /// # Notice
-/// This has a very slight bias. Use [`crate::rand_range_u64()`] instead for no bias.
+/// This has a very slight bias. Use [`rand_range_u64()`] instead for no bias.
 #[cfg_attr(doc_cfg, doc(cfg(feature = "tls")))]
 pub fn rand_mod_u64(n: u64) -> u64 {
     RNG.with(|rng| rng.mod_u64(n))
@@ -164,7 +164,7 @@ pub fn rand_mod_u64(n: u64) -> u64 {
 /// Generates a random `usize` value in the range of 0..n.
 ///
 /// # Notice
-/// This has a very slight bias. Use [`crate::rand_range_usize()`] instead for no bias.
+/// This has a very slight bias. Use [`rand_range_usize()`] instead for no bias.
 #[cfg_attr(doc_cfg, doc(cfg(feature = "tls")))]
 pub fn rand_mod_usize(n: usize) -> usize {
     RNG.with(|rng| rng.mod_usize(n))
