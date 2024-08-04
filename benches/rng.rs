@@ -18,8 +18,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut cha_cha12 = rand_chacha::ChaCha12Rng::seed_from_u64(seed);
     let mut cha_cha20 = rand_chacha::ChaCha20Rng::seed_from_u64(seed);
 
-    let mut pcg64 = rand_pcg::Pcg64::seed_from_u64(seed);
-    let mut pcg64_mcg = rand_pcg::Pcg64Mcg::seed_from_u64(seed);
     let mut lcg128_xsl64 = rand_pcg::Lcg128Xsl64::seed_from_u64(seed);
     let mut mcg128_xsl64 = rand_pcg::Mcg128Xsl64::seed_from_u64(seed);
 
@@ -74,18 +72,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             black_box(x);
         })
     });
-    group.bench_function("Pcg64", |b| {
-        b.iter(|| {
-            x = x.wrapping_add(pcg64.next_u64());
-            black_box(x);
-        })
-    });
-    group.bench_function("Pcg64Mcg", |b| {
-        b.iter(|| {
-            x = x.wrapping_add(pcg64_mcg.next_u64());
-            black_box(x);
-        })
-    });
     group.bench_function("Lcg128Xsl64", |b| {
         b.iter(|| {
             x = x.wrapping_add(lcg128_xsl64.next_u64());
@@ -121,8 +107,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.bench_function("ChaCha8", |b| b.iter(|| cha_cha8.fill_bytes(&mut buffer)));
     group.bench_function("ChaCha12", |b| b.iter(|| cha_cha12.fill_bytes(&mut buffer)));
     group.bench_function("ChaCha20", |b| b.iter(|| cha_cha20.fill_bytes(&mut buffer)));
-    group.bench_function("Pcg64", |b| b.iter(|| pcg64.fill_bytes(&mut buffer)));
-    group.bench_function("Pcg64Mcg", |b| b.iter(|| pcg64_mcg.fill_bytes(&mut buffer)));
     group.bench_function("Lcg128Xsl64", |b| {
         b.iter(|| lcg128_xsl64.fill_bytes(&mut buffer))
     });
