@@ -65,6 +65,11 @@ impl Aes128Ctr64 {
         true
     }
 
+    pub(crate) fn counter_impl(&self) -> u64 {
+        let bytes: [u8; 16] = unsafe { *(&self.counter.get() as *const __m128i as *const _) };
+        u128::from_le_bytes(bytes) as u64
+    }
+
     #[cfg_attr(all(target_feature = "sse2", target_feature = "aes"), inline(always))]
     #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
     #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
@@ -118,13 +123,13 @@ impl Drop for Aes128Ctr128 {
 impl Aes128Ctr128 {
     pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
-        self.counter.set(self.counter.get() << 64);
+        self.counter.set(self.counter.get() + (1 << 64));
         clone
     }
 
     pub(crate) fn long_jump_impl(&self) -> Self {
         let clone = self.clone();
-        self.counter.set(self.counter.get() << 96);
+        self.counter.set(self.counter.get() + (1 << 96));
         clone
     }
 
@@ -151,6 +156,10 @@ impl Aes128Ctr128 {
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         true
+    }
+
+    pub(crate) fn counter_impl(&self) -> u128 {
+        self.counter.get()
     }
 
     #[cfg_attr(all(target_feature = "sse2", target_feature = "aes"), inline(always))]
@@ -232,6 +241,11 @@ impl Aes256Ctr64 {
         true
     }
 
+    pub(crate) fn counter_impl(&self) -> u64 {
+        let bytes: [u8; 16] = unsafe { *(&self.counter.get() as *const __m128i as *const _) };
+        u128::from_le_bytes(bytes) as u64
+    }
+
     #[cfg_attr(all(target_feature = "sse2", target_feature = "aes"), inline(always))]
     #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
     #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
@@ -289,13 +303,13 @@ impl Drop for Aes256Ctr128 {
 impl Aes256Ctr128 {
     pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
-        self.counter.set(self.counter.get() << 64);
+        self.counter.set(self.counter.get() + (1 << 64));
         clone
     }
 
     pub(crate) fn long_jump_impl(&self) -> Self {
         let clone = self.clone();
-        self.counter.set(self.counter.get() << 96);
+        self.counter.set(self.counter.get() + (1 << 96));
         clone
     }
 
@@ -322,6 +336,10 @@ impl Aes256Ctr128 {
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         true
+    }
+
+    pub(crate) fn counter_impl(&self) -> u128 {
+        self.counter.get()
     }
 
     #[cfg_attr(all(target_feature = "sse2", target_feature = "aes"), inline(always))]

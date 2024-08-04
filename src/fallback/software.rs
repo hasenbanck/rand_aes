@@ -71,7 +71,7 @@ impl Aes128Ctr64 {
     }
 
     pub(crate) fn from_seed_impl(key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) -> Self {
-        let counter = [u64::from_le_bytes(nonce), u64::from_le_bytes(counter)];
+        let counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
         let round_keys: FixsliceKeys128 = aes128_key_expansion(key);
 
         Self {
@@ -83,12 +83,16 @@ impl Aes128Ctr64 {
     }
 
     pub(crate) fn seed_impl(&mut self, key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) {
-        self.counter = [u64::from_le_bytes(nonce), u64::from_le_bytes(counter)];
+        self.counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
         self.round_keys = aes128_key_expansion(key);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         false
+    }
+
+    pub(crate) fn counter_impl(&self) -> u64 {
+        self.counter[0]
     }
 
     #[inline(never)]
@@ -147,13 +151,13 @@ impl Drop for Aes128Ctr128 {
 impl Aes128Ctr128 {
     pub(crate) fn jump_impl(&mut self) -> Self {
         let clone = self.clone();
-        self.counter <<= 64;
+        self.counter += 1 << 64;
         clone
     }
 
     pub(crate) fn long_jump_impl(&mut self) -> Self {
         let clone = self.clone();
-        self.counter <<= 96;
+        self.counter += 1 << 96;
         clone
     }
 
@@ -176,6 +180,10 @@ impl Aes128Ctr128 {
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         false
+    }
+
+    pub(crate) fn counter_impl(&self) -> u128 {
+        self.counter
     }
 
     #[inline(never)]
@@ -228,7 +236,7 @@ impl Drop for Aes256Ctr64 {
 
 impl Aes256Ctr64 {
     pub(crate) fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
-        let counter = [u64::from_le_bytes(nonce), u64::from_le_bytes(counter)];
+        let counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
         let round_keys: FixsliceKeys256 = aes256_key_expansion(key);
 
         Self {
@@ -240,12 +248,16 @@ impl Aes256Ctr64 {
     }
 
     pub(crate) fn seed_impl(&mut self, key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) {
-        self.counter = [u64::from_le_bytes(nonce), u64::from_le_bytes(counter)];
+        self.counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
         self.round_keys = aes256_key_expansion(key);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         false
+    }
+
+    pub(crate) fn counter_impl(&self) -> u64 {
+        self.counter[0]
     }
 
     pub(crate) fn next_impl(&mut self) -> u128 {
@@ -303,13 +315,13 @@ impl Drop for Aes256Ctr128 {
 impl Aes256Ctr128 {
     pub(crate) fn jump_impl(&mut self) -> Self {
         let clone = self.clone();
-        self.counter <<= 64;
+        self.counter += 1 << 64;
         clone
     }
 
     pub(crate) fn long_jump_impl(&mut self) -> Self {
         let clone = self.clone();
-        self.counter <<= 96;
+        self.counter += 1 << 96;
         clone
     }
 
@@ -332,6 +344,10 @@ impl Aes256Ctr128 {
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         false
+    }
+
+    pub(crate) fn counter_impl(&self) -> u128 {
+        self.counter
     }
 
     #[inline(never)]

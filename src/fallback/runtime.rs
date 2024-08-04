@@ -93,6 +93,13 @@ impl Aes128Ctr64 {
         }
     }
 
+    pub(crate) fn counter_impl(&self) -> u64 {
+        match &self.0 {
+            Aes128Ctr64Inner::Hardware(this) => this.counter_impl(),
+            Aes128Ctr64Inner::Fallback(this) => this.borrow().counter_impl(),
+        }
+    }
+
     #[inline(always)]
     pub(crate) fn next_impl(&self) -> u128 {
         match &self.0 {
@@ -178,6 +185,13 @@ impl Aes128Ctr128 {
         }
     }
 
+    pub(crate) fn counter_impl(&self) -> u128 {
+        match &self.0 {
+            Aes128Ctr128Inner::Hardware(this) => this.counter_impl(),
+            Aes128Ctr128Inner::Fallback(this) => this.borrow().counter_impl(),
+        }
+    }
+
     #[inline(always)]
     pub(crate) fn next_impl(&self) -> u128 {
         match &self.0 {
@@ -234,6 +248,13 @@ impl Aes256Ctr64 {
         match &self.0 {
             Aes256Ctr64Inner::Hardware(this) => this.is_hardware_accelerated_impl(),
             Aes256Ctr64Inner::Fallback(this) => this.borrow().is_hardware_accelerated_impl(),
+        }
+    }
+
+    pub(crate) fn counter_impl(&self) -> u64 {
+        match &self.0 {
+            Aes256Ctr64Inner::Hardware(this) => this.counter_impl(),
+            Aes256Ctr64Inner::Fallback(this) => this.borrow().counter_impl(),
         }
     }
 
@@ -300,6 +321,13 @@ impl Aes256Ctr128 {
                     fallback,
                 ))))
             }
+        }
+    }
+
+    pub(crate) fn counter_impl(&self) -> u128 {
+        match &self.0 {
+            Aes256Ctr128Inner::Hardware(this) => this.counter_impl(),
+            Aes256Ctr128Inner::Fallback(this) => this.borrow().counter_impl(),
         }
     }
 

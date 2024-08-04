@@ -115,6 +115,7 @@ pub trait Jump {
 /// Provides common random number generation functionality.
 pub trait Random {
     type Seed;
+    type Counter;
 
     /// Creates a new random number generator using the given seed.
     fn from_seed(seed: Self::Seed) -> Self;
@@ -134,6 +135,9 @@ pub trait Random {
 
     /// Returns `true` if the random number generator is using hardware accelerated AES.
     fn is_hardware_accelerated(&self) -> bool;
+
+    /// Returns the current counter value of the PRNG. This value should be treated as confidential.
+    fn counter(&self) -> Self::Counter;
 
     /// Generates the next `u128` value.
     fn next(&self) -> u128;

@@ -41,6 +41,7 @@ impl core::fmt::Debug for Aes256Ctr128 {
 
 impl Random for Aes128Ctr64 {
     type Seed = seeds::Aes128Ctr64Seed;
+    type Counter = u64;
 
     fn from_seed(seed: Self::Seed) -> Self {
         let mut seed_bytes = [0u8; 16];
@@ -81,6 +82,10 @@ impl Random for Aes128Ctr64 {
         self.is_hardware_accelerated_impl()
     }
 
+    fn counter(&self) -> Self::Counter {
+        self.counter_impl()
+    }
+
     #[inline(always)]
     fn next(&self) -> u128 {
         safely_call! { Aes128Ctr64::next_impl(self) }
@@ -89,6 +94,7 @@ impl Random for Aes128Ctr64 {
 
 impl Random for Aes128Ctr128 {
     type Seed = seeds::Aes128Ctr128Seed;
+    type Counter = u128;
 
     fn from_seed(seed: Self::Seed) -> Self {
         let mut seed_bytes = [0u8; 16];
@@ -125,6 +131,10 @@ impl Random for Aes128Ctr128 {
         self.is_hardware_accelerated_impl()
     }
 
+    fn counter(&self) -> Self::Counter {
+        self.counter_impl()
+    }
+
     #[inline(always)]
     fn next(&self) -> u128 {
         safely_call! { Aes128Ctr128::next_impl(self) }
@@ -133,6 +143,7 @@ impl Random for Aes128Ctr128 {
 
 impl Random for Aes256Ctr64 {
     type Seed = seeds::Aes256Ctr64Seed;
+    type Counter = u64;
 
     fn from_seed(seed: Self::Seed) -> Self {
         let mut seed_bytes = [0u8; 32];
@@ -173,6 +184,10 @@ impl Random for Aes256Ctr64 {
         self.is_hardware_accelerated_impl()
     }
 
+    fn counter(&self) -> Self::Counter {
+        self.counter_impl()
+    }
+
     #[inline(always)]
     fn next(&self) -> u128 {
         safely_call! { Aes256Ctr64::next_impl(self) }
@@ -181,6 +196,7 @@ impl Random for Aes256Ctr64 {
 
 impl Random for Aes256Ctr128 {
     type Seed = seeds::Aes256Ctr128Seed;
+    type Counter = u128;
 
     fn from_seed(seed: Self::Seed) -> Self {
         let mut seed_bytes = [0u8; 32];
@@ -215,6 +231,10 @@ impl Random for Aes256Ctr128 {
 
     fn is_hardware_accelerated(&self) -> bool {
         self.is_hardware_accelerated_impl()
+    }
+
+    fn counter(&self) -> Self::Counter {
+        self.counter_impl()
     }
 
     #[inline(always)]

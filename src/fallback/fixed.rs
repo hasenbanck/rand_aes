@@ -33,6 +33,10 @@ impl Aes128Ctr64 {
         self.0.borrow_mut().is_hardware_accelerated_impl()
     }
 
+    pub(crate) fn counter_impl(&self) -> u64 {
+        self.0.borrow_mut().counter_impl()
+    }
+
     #[inline(always)]
     pub(crate) fn next_impl(&self) -> u128 {
         self.0.borrow_mut().next_impl()
@@ -70,6 +74,10 @@ impl Aes128Ctr128 {
         self.0.borrow_mut().is_hardware_accelerated_impl()
     }
 
+    pub(crate) fn counter_impl(&self) -> u128 {
+        self.0.borrow_mut().counter_impl()
+    }
+
     #[inline(always)]
     pub(crate) fn next_impl(&self) -> u128 {
         self.0.borrow_mut().next_impl()
@@ -95,6 +103,10 @@ impl Aes256Ctr64 {
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         self.0.borrow_mut().is_hardware_accelerated_impl()
+    }
+
+    pub(crate) fn counter_impl(&self) -> u64 {
+        self.0.borrow_mut().counter_impl()
     }
 
     #[inline(always)]
@@ -132,6 +144,10 @@ impl Aes256Ctr128 {
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         self.0.borrow_mut().is_hardware_accelerated_impl()
+    }
+
+    pub(crate) fn counter_impl(&self) -> u128 {
+        self.0.borrow_mut().counter_impl()
     }
 
     #[inline(always)]
