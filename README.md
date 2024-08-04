@@ -41,7 +41,7 @@ use rand_aes::{Random, Aes128Ctr64};
 
 fn main() {
     let prng = Aes128Ctr64::from_entropy();
-    let random_u64 = prng::u64;
+    let random_u64 = prng.u64;
 }
 ```
 

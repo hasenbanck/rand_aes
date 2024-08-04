@@ -1,6 +1,6 @@
 [package]
 name = "rand_aes"
-description = "AES based pseudo-random number generator."
+description = "AES based pseudo-random number generator"
 authors = ["Nils Hasenbanck <nils@hasenbanck.de>"]
 keywords = ["rand", "random", "no-std", "aes"]
 categories = ["algorithms", "no-std"]
