@@ -19,6 +19,7 @@ impl Aes128Ctr64Seed {
 
     /// Creates a new seed from the OS provided entropy source.
     #[cfg(feature = "getrandom")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "getrandom")))]
     pub fn from_entropy() -> Self {
         Aes128Ctr64Seed(secure_bytes())
     }
@@ -57,6 +58,7 @@ impl Aes128Ctr128Seed {
 
     /// Creates a new seed from the OS provided entropy source.
     #[cfg(feature = "getrandom")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "getrandom")))]
     pub fn from_entropy() -> Self {
         Aes128Ctr128Seed(secure_bytes())
     }
@@ -96,6 +98,7 @@ impl Aes256Ctr64Seed {
 
     /// Creates a new seed from the OS provided entropy source.
     #[cfg(feature = "getrandom")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "getrandom")))]
     pub fn from_entropy() -> Self {
         Aes256Ctr64Seed(secure_bytes())
     }
@@ -140,6 +143,7 @@ impl Aes256Ctr128Seed {
 
     /// Creates a new seed from the OS provided entropy source.
     #[cfg(feature = "getrandom")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "getrandom")))]
     pub fn from_entropy() -> Self {
         Aes256Ctr128Seed(secure_bytes())
     }

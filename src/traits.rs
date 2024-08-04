@@ -126,12 +126,12 @@ pub trait Random {
     fn seed(&self, seed: Self::Seed);
 
     #[cfg(feature = "getrandom")]
-    #[cfg_attr(doc_cfg, doc(cfg(feature = "getrandom")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "getrandom")))]
     /// Creates a new random number generator using a seed from the entropy source of the OS.
     fn from_entropy() -> Self;
 
     #[cfg(feature = "getrandom")]
-    #[cfg_attr(doc_cfg, doc(cfg(feature = "getrandom")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "getrandom")))]
     /// Seeds the random number generator from the entropy source of the OS.
     fn seed_from_entropy(&self);
 

@@ -11,7 +11,7 @@
 //! Common functionality is provided using the [`Random`] trait or the optionally provided
 //! [`rand_core::RngCore`] and [`rand_core::SeedableRng`] traits.
 //!
-//! ## Optimal performance
+//! ## Optimal Performance
 //!
 //! We provide runtime detection for the hardware accelerated AES instruction set for all supported
 //! platforms. Should the executing CPU not support hardware accelerated AES, a software fallback
@@ -62,6 +62,7 @@
 
 pub mod seeds;
 #[cfg(all(feature = "tls", not(feature = "verification")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "tls")))]
 pub mod tls;
 mod traits;
 

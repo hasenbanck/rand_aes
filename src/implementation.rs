@@ -264,6 +264,7 @@ impl Jump for Aes256Ctr128 {
 }
 
 #[cfg(feature = "rand_core")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 impl rand_core::RngCore for Aes128Ctr64 {
     #[inline(always)]
     fn next_u32(&mut self) -> u32 {
@@ -288,6 +289,7 @@ impl rand_core::RngCore for Aes128Ctr64 {
 }
 
 #[cfg(feature = "rand_core")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 impl rand_core::RngCore for Aes128Ctr128 {
     #[inline(always)]
     fn next_u32(&mut self) -> u32 {
@@ -312,6 +314,7 @@ impl rand_core::RngCore for Aes128Ctr128 {
 }
 
 #[cfg(feature = "rand_core")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 impl rand_core::RngCore for Aes256Ctr64 {
     #[inline(always)]
     fn next_u32(&mut self) -> u32 {
@@ -336,6 +339,7 @@ impl rand_core::RngCore for Aes256Ctr64 {
 }
 
 #[cfg(feature = "rand_core")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 impl rand_core::RngCore for Aes256Ctr128 {
     #[inline(always)]
     fn next_u32(&mut self) -> u32 {
@@ -360,6 +364,7 @@ impl rand_core::RngCore for Aes256Ctr128 {
 }
 
 #[cfg(feature = "rand_core")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 impl rand_core::SeedableRng for Aes128Ctr64 {
     type Seed = seeds::Aes128Ctr64Seed;
 
@@ -369,6 +374,7 @@ impl rand_core::SeedableRng for Aes128Ctr64 {
 }
 
 #[cfg(feature = "rand_core")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 impl rand_core::SeedableRng for Aes128Ctr128 {
     type Seed = seeds::Aes128Ctr128Seed;
 
@@ -378,6 +384,7 @@ impl rand_core::SeedableRng for Aes128Ctr128 {
 }
 
 #[cfg(feature = "rand_core")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 impl rand_core::SeedableRng for Aes256Ctr64 {
     type Seed = seeds::Aes256Ctr64Seed;
 
@@ -387,6 +394,7 @@ impl rand_core::SeedableRng for Aes256Ctr64 {
 }
 
 #[cfg(feature = "rand_core")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
 impl rand_core::SeedableRng for Aes256Ctr128 {
     type Seed = seeds::Aes256Ctr128Seed;
 

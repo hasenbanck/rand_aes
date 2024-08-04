@@ -71,7 +71,7 @@ accelerated versions for the following architectures:
 
 riscv64 needs nightly Rust, since the AES intrinsics are not marked as stable yet.
 
-## Optimal performance
+## Optimal Performance
 
 We provide runtime detection for the hardware accelerated AES instruction set for all supported
 platforms. Should the executing CPU not support hardware accelerated AES, a software fallback
