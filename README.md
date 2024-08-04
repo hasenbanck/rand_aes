@@ -101,7 +101,7 @@ rustflags = ["-C", "target-feature=+aes"]
 
 ## Acknowledgement
 
-The software based fixsliced implementations of AES-128 and AES-256 (64-bit) is a copy of the
+The software based fixsliced implementations of AES-128 and AES-256 is a copy of the
 [`aes` crate](https://crates.io/crates/aes) written by the RustCrypto team. Author of the original C implementation
 is Alexandre Adomnicai.
 
