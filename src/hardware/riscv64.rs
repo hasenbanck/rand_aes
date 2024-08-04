@@ -485,7 +485,7 @@ impl Aes256Ctr128 {
     }
 
     pub(crate) fn counter_impl(&self) -> u128 {
-        self.counter.get()[0]
+        self.counter.get()
     }
 
     #[target_feature(enable = "zkne")]
