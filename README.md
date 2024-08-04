@@ -103,7 +103,7 @@ rustflags = ["-C", "target-feature=+aes"]
 
 Following benchmarks were made with version v0.1.0 and enabled hardware AES target features.
 
-For aarch64: M1 Pro (14' MacBook Pro, 2021)
+For aarch64 Laptop: M1 Pro (14' MacBook Pro, 2021)
 
 ```
 Latency/TLS             time:   [1.1510 ns 1.1522 ns 1.1536 ns]
@@ -129,7 +129,7 @@ Throughput/Lcg128Xsl64  thrpt:  [4.5148 GiB/s 4.5335 GiB/s 4.5529 GiB/s]
 Throughput/Mcg128Xsl64  thrpt:  [5.9140 GiB/s 5.9424 GiB/s 5.9664 GiB/s]
 ```
 
-For x86_64: AMD Ryzen 9 5950X
+For x86_64 Desktop: AMD Ryzen 9 5950X
 
 ```
 Latency/TLS             time:   [1.0577 ns 1.0592 ns 1.0616 ns]
@@ -153,6 +153,32 @@ Throughput/ChaCha12     thrpt:  [4.5944 GiB/s 4.5981 GiB/s 4.6015 GiB/s]
 Throughput/ChaCha20     thrpt:  [2.8697 GiB/s 2.8727 GiB/s 2.8753 GiB/s]
 Throughput/Lcg128Xsl64  thrpt:  [5.2476 GiB/s 5.3558 GiB/s 5.4613 GiB/s]
 Throughput/Mcg128Xsl64  thrpt:  [7.6245 GiB/s 7.7582 GiB/s 7.8882 GiB/s]
+```
+
+For a aarch64 SBC: ARM Cortex-A73 (Odroid N2+):
+
+```
+Latency/TLS             time:   [7.0580 ns 7.0992 ns 7.1399 ns]
+Latency/Aes128Ctr64     time:   [7.4022 ns 7.4125 ns 7.4233 ns]
+Latency/Aes128Ctr128    time:   [6.3027 ns 6.3144 ns 6.3275 ns]
+Latency/Aes256Ctr64     time:   [10.006 ns 10.007 ns 10.007 ns]
+Latency/Aes256Ctr128    time:   [9.1727 ns 9.1730 ns 9.1735 ns]
+Latency/ChaCha8         time:   [25.923 ns 25.928 ns 25.934 ns]
+Latency/ChaCha12        time:   [36.375 ns 36.379 ns 36.384 ns]
+Latency/ChaCha20        time:   [57.162 ns 57.168 ns 57.174 ns]
+Latency/Lcg128Xsl64     time:   [6.2690 ns 6.2725 ns 6.2765 ns]
+Latency/Mcg128Xsl64     time:   [6.2628 ns 6.2649 ns 6.2674 ns]
+
+Throughput/TLS          thrpt:  [2.1681 GiB/s 2.1689 GiB/s 2.1697 GiB/s]
+Throughput/Aes128Ctr64  thrpt:  [2.1290 GiB/s 2.1365 GiB/s 2.1440 GiB/s]
+Throughput/Aes128Ct128  thrpt:  [2.3520 GiB/s 2.3621 GiB/s 2.3720 GiB/s]
+Throughput/Aes256Ctr64  thrpt:  [1.5376 GiB/s 1.5402 GiB/s 1.5427 GiB/s]
+Throughput/Aes256Ct128  thrpt:  [1.7468 GiB/s 1.7499 GiB/s 1.7530 GiB/s]
+Throughput/ChaCha8      thrpt:  [315.66 MiB/s 315.77 MiB/s 315.88 MiB/s]
+Throughput/ChaCha12     thrpt:  [220.51 MiB/s 220.58 MiB/s 220.65 MiB/s]
+Throughput/ChaCha20     thrpt:  [137.55 MiB/s 137.59 MiB/s 137.64 MiB/s]
+Throughput/Lcg128Xsl64  thrpt:  [1.1512 GiB/s 1.1512 GiB/s 1.1513 GiB/s]
+Throughput/Mcg128Xsl64  thrpt:  [1.1766 GiB/s 1.1766 GiB/s 1.1767 GiB/s]
 ```
 
 ## Acknowledgement
