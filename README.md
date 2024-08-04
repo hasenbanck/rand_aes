@@ -99,6 +99,62 @@ rustflags = ["-C", "target-feature=+zkne"]
 rustflags = ["-C", "target-feature=+aes"]
 ```
 
+## Benchmark
+
+Following benchmarks were made with version v0.1.0 and enabled hardware AES target features.
+
+For aarch64: M1 Pro (14' MacBook Pro, 2021)
+
+```
+Latency/TLS             time:   [1.1510 ns 1.1522 ns 1.1536 ns]
+Latency/Aes128Ctr64     time:   [1.1830 ns 1.1895 ns 1.1964 ns]
+Latency/Aes128Ctr128    time:   [1.3711 ns 1.3747 ns 1.3792 ns]
+Latency/Aes256Ctr64     time:   [1.8304 ns 1.8478 ns 1.8678 ns]
+Latency/Aes256Ctr128    time:   [2.0468 ns 2.0474 ns 2.0480 ns]
+Latency/ChaCha8         time:   [5.9017 ns 5.9146 ns 5.9327 ns]
+Latency/ChaCha12        time:   [8.3993 ns 8.4023 ns 8.4063 ns]
+Latency/ChaCha20        time:   [13.577 ns 13.721 ns 13.917 ns]
+Latency/Lcg128Xsl64     time:   [1.6307 ns 1.6323 ns 1.6344 ns]
+Latency/Mcg128Xsl64     time:   [1.2409 ns 1.2417 ns 1.2427 ns]
+
+Throughput/TLS          thrpt:  [12.655 GiB/s 12.657 GiB/s 12.659 GiB/s]
+Throughput/Aes128Ctr64  thrpt:  [12.601 GiB/s 12.625 GiB/s 12.644 GiB/s]
+Throughput/Aes128Ct128  thrpt:  [11.315 GiB/s 11.349 GiB/s 11.380 GiB/s]
+Throughput/Aes256Ctr64  thrpt:  [8.4748 GiB/s 8.4896 GiB/s 8.5014 GiB/s]
+Throughput/Aes256Ct128  thrpt:  [7.4943 GiB/s 7.5061 GiB/s 7.5158 GiB/s]
+Throughput/ChaCha8      thrpt:  [1.3391 GiB/s 1.3402 GiB/s 1.3410 GiB/s]
+Throughput/ChaCha12     thrpt:  [935.03 MiB/s 938.98 MiB/s 942.22 MiB/s]
+Throughput/ChaCha20     thrpt:  [578.33 MiB/s 580.03 MiB/s 581.44 MiB/s]
+Throughput/Lcg128Xsl64  thrpt:  [4.5148 GiB/s 4.5335 GiB/s 4.5529 GiB/s]
+Throughput/Mcg128Xsl64  thrpt:  [5.9140 GiB/s 5.9424 GiB/s 5.9664 GiB/s]
+```
+
+For x86_64: AMD Ryzen 9 5950X
+
+```
+Latency/TLS             time:   [1.0577 ns 1.0592 ns 1.0616 ns]
+Latency/Aes128Ctr64     time:   [1.0680 ns 1.0695 ns 1.0712 ns]
+Latency/Aes128Ctr128    time:   [1.1573 ns 1.1582 ns 1.1592 ns]
+Latency/Aes256Ctr64     time:   [1.6956 ns 1.7074 ns 1.7252 ns]
+Latency/Aes256Ctr128    time:   [1.7394 ns 1.7410 ns 1.7427 ns]
+Latency/ChaCha8         time:   [1.4317 ns 1.4338 ns 1.4363 ns]
+Latency/ChaCha12        time:   [1.9144 ns 1.9162 ns 1.9182 ns]
+Latency/ChaCha20        time:   [2.9326 ns 2.9349 ns 2.9375 ns]
+Latency/Lcg128Xsl64     time:   [1.1708 ns 1.1717 ns 1.1727 ns]
+Latency/Mcg128Xsl64     time:   [863.11 ps 863.58 ps 864.11 ps]
+
+Throughput/TLS          thrpt:  [14.118 GiB/s 14.130 GiB/s 14.141 GiB/s]
+Throughput/Aes128Ctr64  thrpt:  [14.012 GiB/s 14.034 GiB/s 14.054 GiB/s]
+Throughput/Aes128Ct128  thrpt:  [13.347 GiB/s 13.357 GiB/s 13.367 GiB/s]
+Throughput/Aes256Ctr64  thrpt:  [8.8344 GiB/s 8.8416 GiB/s 8.8483 GiB/s]
+Throughput/Aes256Ct128  thrpt:  [7.7617 GiB/s 7.7838 GiB/s 7.8044 GiB/s]
+Throughput/ChaCha8      thrpt:  [6.6074 GiB/s 6.6142 GiB/s 6.6203 GiB/s]
+Throughput/ChaCha12     thrpt:  [4.5944 GiB/s 4.5981 GiB/s 4.6015 GiB/s]
+Throughput/ChaCha20     thrpt:  [2.8697 GiB/s 2.8727 GiB/s 2.8753 GiB/s]
+Throughput/Lcg128Xsl64  thrpt:  [5.2476 GiB/s 5.3558 GiB/s 5.4613 GiB/s]
+Throughput/Mcg128Xsl64  thrpt:  [7.6245 GiB/s 7.7582 GiB/s 7.8882 GiB/s]
+```
+
 ## Acknowledgement
 
 The software based fixsliced implementations of AES-128 and AES-256 is a copy of the
