@@ -8,7 +8,7 @@ license = "Apache-2.0"
 readme = "README.md"
 documentation = "https://docs.rs/rand_aes"
 repository = "https://github.com/hasenbanck/rand_aes"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.80"
 
@@ -51,7 +51,7 @@ name = "rng"
 harness = false
 
 [package.metadata."docs.rs"]
-all-features = true
+features = ["std", "tls", "getrandom", "rand_core"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(doc_cfg)'] }

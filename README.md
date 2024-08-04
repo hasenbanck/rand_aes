@@ -76,7 +76,7 @@ riscv64 needs nightly Rust, since the AES intrinsics are not marked as stable ye
 We provide runtime detection for the hardware accelerated AES instruction set for all supported
 platforms. Should the executing CPU not support hardware accelerated AES, a software fallback
 is provided. But we highly recommend to enable the specific target feature on compile time,
-since the AES instruction sets is available on modern desktop CPU for at least 10 years.
+since the AES instruction sets are available on modern desktop CPU for at least 10 years.
 Enabling the target feature enables the compiler to more aggressively inline and provides
 much better performance. The runtime detection is not supported in `no_std`.
 
