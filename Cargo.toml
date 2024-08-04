@@ -37,6 +37,8 @@ getrandom = { version = "0.2", optional = true }
 criterion = { version = "0.5", features = ["html_reports"] }
 hex-literal = "0.4"
 paste = "1"
+rand_chacha = "0.3"
+rand_pcg = "0.3"
 
 [profile.bench]
 opt-level = 3
