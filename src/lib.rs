@@ -61,22 +61,110 @@
 #![cfg_attr(target_arch = "riscv64", feature(riscv_ext_intrinsics))]
 
 pub mod seeds;
+
 #[cfg(all(feature = "tls", not(feature = "verification")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "tls")))]
 pub mod tls;
+
 mod traits;
 
-#[cfg(any(feature = "force_fallback", feature = "verification"))]
+#[cfg(any(
+    not(any(
+        all(
+            target_arch = "x86_64",
+            target_feature = "sse2",
+            target_feature = "aes",
+        ),
+        all(
+            target_arch = "riscv64", target_feature = "zkne"
+        ),
+        all(
+            target_arch = "aarch64",
+            target_feature = "neon",
+            target_feature = "aes",
+        ),
+    )),
+    feature = "force_fallback",
+    feature = "verification",
+))]
 pub(crate) mod fallback;
 
-#[cfg(all(feature = "force_fallback", not(feature = "verification")))]
+#[cfg(all(
+    any(
+        not(any(
+            all(
+                target_arch = "x86_64",
+                target_feature = "sse2",
+                target_feature = "aes",
+            ),
+            all(
+                target_arch = "riscv64", target_feature = "zkne"
+            ),
+            all(
+                target_arch = "aarch64",
+                target_feature = "neon",
+                target_feature = "aes",
+            ),
+        )),
+        feature = "force_fallback"
+    ),
+    not(feature = "verification"),
+))]
 pub use fallback::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
 
-#[cfg(all(not(feature = "force_fallback"), not(feature = "verification")))]
+#[cfg(all(
+    any(
+        all(
+            target_arch = "x86_64",
+            target_feature = "sse2",
+            target_feature = "aes",
+        ),
+        all(
+            target_arch = "riscv64", target_feature = "zkne"
+        ),
+        all(
+            target_arch = "aarch64",
+            target_feature = "neon",
+            target_feature = "aes",
+        ),
+    ),
+    not(feature = "force_fallback"),
+    not(feature = "verification"),
+))]
 pub use hardware::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
 
 #[cfg(any(
-    not(all(feature = "force_fallback", feature = "force_no_runtime_detection")),
+    not(all(
+        any(
+            not(any(
+                all(
+                    target_arch = "x86_64",
+                    target_feature = "sse2",
+                    target_feature = "aes",
+                ),
+                all(
+                    target_arch = "riscv64", target_feature = "zkne"
+                ),
+                all(
+                    target_arch = "aarch64",
+                    target_feature = "neon",
+                    target_feature = "aes",
+                ),
+            )),
+            feature = "force_fallback"
+        ),
+        any(
+            not(all(
+                feature = "std",
+                any(
+                    target_arch = "aarch64",
+                    target_arch = "riscv64",
+                    target_arch = "x86_64",
+                )
+            )),
+            feature = "force_no_runtime_detection"
+        )
+    )),
     feature = "verification"
 ))]
 mod hardware;

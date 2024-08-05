@@ -12,7 +12,27 @@ pub use riscv64::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
 
-#[cfg(all(test, not(feature = "force_fallback")))]
+#[cfg(all(
+    test,
+    not(any(
+        not(any(
+            all(
+                target_arch = "x86_64",
+                target_feature = "sse2",
+                target_feature = "aes",
+            ),
+            all(
+                target_arch = "riscv64", target_feature = "zkne"
+            ),
+            all(
+                target_arch = "aarch64",
+                target_feature = "neon",
+                target_feature = "aes",
+            ),
+        )),
+        feature = "force_fallback"
+    ))
+))]
 mod tests {
     use super::*;
     use crate::constants::{

@@ -1,28 +1,28 @@
 //! The fixed fallback, when STD is not available or the platform has no hardware based AES support.
 use core::cell::RefCell;
 
-use super::software::Aes128Ctr128 as Aes128Ctr128Fallback;
-use super::software::Aes128Ctr64 as Aes128Ctr64Fallback;
-use super::software::Aes256Ctr128 as Aes256Ctr128Fallback;
-use super::software::Aes256Ctr64 as Aes256Ctr64Fallback;
+use super::software::Aes128Ctr128 as Aes128Ctr128Software;
+use super::software::Aes128Ctr64 as Aes128Ctr64Software;
+use super::software::Aes256Ctr128 as Aes256Ctr128Software;
+use super::software::Aes256Ctr64 as Aes256Ctr64Software;
 
 /// A random number generator based on the AES-128 block cipher that runs in CTR mode and has a
 /// period of 64-bit.
 ///
 /// The full 10 rounds of encryption are used.
 #[derive(Clone)]
-pub struct Aes128Ctr64(RefCell<Aes128Ctr64Fallback>);
+pub struct Aes128Ctr64(RefCell<Aes128Ctr64Software>);
 
 impl Aes128Ctr64 {
     #[cfg(feature = "tls")]
     pub(crate) fn zeroed() -> Self {
-        let fallback = Aes128Ctr64Fallback::zeroed();
-        Self(RefCell::new(fallback))
+        let software = Aes128Ctr64Software::zeroed();
+        Self(RefCell::new(software))
     }
 
     pub(crate) fn from_seed_impl(key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) -> Self {
-        let fallback = Aes128Ctr64Fallback::from_seed_impl(key, nonce, counter);
-        Self(RefCell::new(fallback))
+        let software = Aes128Ctr64Software::from_seed_impl(key, nonce, counter);
+        Self(RefCell::new(software))
     }
 
     pub(crate) fn seed_impl(&self, key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) {
@@ -48,7 +48,7 @@ impl Aes128Ctr64 {
 ///
 /// The full 10 rounds of encryption are used.
 #[derive(Clone)]
-pub struct Aes128Ctr128(RefCell<Aes128Ctr128Fallback>);
+pub struct Aes128Ctr128(RefCell<Aes128Ctr128Software>);
 
 impl Aes128Ctr128 {
     pub(crate) fn jump_impl(&self) -> Self {
@@ -62,8 +62,8 @@ impl Aes128Ctr128 {
     }
 
     pub(crate) fn from_seed_impl(key: [u8; 16], counter: [u8; 16]) -> Self {
-        let fallback = Aes128Ctr128Fallback::from_seed_impl(key, counter);
-        Self(RefCell::new(fallback))
+        let software = Aes128Ctr128Software::from_seed_impl(key, counter);
+        Self(RefCell::new(software))
     }
 
     pub(crate) fn seed_impl(&self, key: [u8; 16], counter: [u8; 16]) {
@@ -89,12 +89,12 @@ impl Aes128Ctr128 {
 ///
 /// The full 14 rounds of encryption are used.
 #[derive(Clone)]
-pub struct Aes256Ctr64(RefCell<Aes256Ctr64Fallback>);
+pub struct Aes256Ctr64(RefCell<Aes256Ctr64Software>);
 
 impl Aes256Ctr64 {
     pub(crate) fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
-        let fallback = Aes256Ctr64Fallback::from_seed_impl(key, nonce, counter);
-        Self(RefCell::new(fallback))
+        let software = Aes256Ctr64Software::from_seed_impl(key, nonce, counter);
+        Self(RefCell::new(software))
     }
 
     pub(crate) fn seed_impl(&self, key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) {
@@ -120,7 +120,7 @@ impl Aes256Ctr64 {
 ///
 /// The full 14 rounds of encryption are used.
 #[derive(Clone)]
-pub struct Aes256Ctr128(RefCell<Aes256Ctr128Fallback>);
+pub struct Aes256Ctr128(RefCell<Aes256Ctr128Software>);
 
 impl Aes256Ctr128 {
     pub(crate) fn jump_impl(&self) -> Self {
@@ -134,8 +134,8 @@ impl Aes256Ctr128 {
     }
 
     pub(crate) fn from_seed_impl(key: [u8; 32], counter: [u8; 16]) -> Self {
-        let fallback = Aes256Ctr128Fallback::from_seed_impl(key, counter);
-        Self(RefCell::new(fallback))
+        let software = Aes256Ctr128Software::from_seed_impl(key, counter);
+        Self(RefCell::new(software))
     }
 
     pub(crate) fn seed_impl(&self, key: [u8; 32], counter: [u8; 16]) {
