@@ -10,12 +10,42 @@ use core::ops::RangeBounds;
 use crate::seeds::Aes128Ctr64Seed;
 use crate::Random;
 
-#[cfg(not(feature = "force_fallback"))]
+#[cfg(not(any(
+    not(any(
+        all(
+            target_arch = "x86_64",
+            target_feature = "sse2",
+            target_feature = "aes",
+        ),
+        all(target_arch = "riscv64", target_feature = "zkne"),
+        all(
+            target_arch = "aarch64",
+            target_feature = "neon",
+            target_feature = "aes",
+        ),
+    )),
+    feature = "force_fallback"
+)))]
 thread_local! {
     pub(super) static RNG: crate::Aes128Ctr64 = const { crate::Aes128Ctr64::zeroed() };
 }
 
-#[cfg(feature = "force_fallback")]
+#[cfg(any(
+    not(any(
+        all(
+            target_arch = "x86_64",
+            target_feature = "sse2",
+            target_feature = "aes",
+        ),
+        all(target_arch = "riscv64", target_feature = "zkne"),
+        all(
+            target_arch = "aarch64",
+            target_feature = "neon",
+            target_feature = "aes",
+        ),
+    )),
+    feature = "force_fallback"
+))]
 thread_local! {
     pub(super) static RNG: core::cell::LazyCell<crate::Aes128Ctr64> = core::cell::LazyCell::new(crate::Aes128Ctr64::zeroed);
 }

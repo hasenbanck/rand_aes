@@ -458,7 +458,17 @@ pub unsafe fn aes256_key_expansion(key: [u8; AES256_KEY_SIZE]) -> [__m128i; AES2
     expanded_keys
 }
 
-#[cfg(all(test, not(feature = "force_fallback")))]
+#[cfg(all(
+    test,
+    not(any(
+        not(all(
+            target_arch = "x86_64",
+            target_feature = "sse2",
+            target_feature = "aes",
+        )),
+        feature = "force_fallback"
+    ))
+))]
 mod tests {
     use super::*;
     use crate::constants::AES_BLOCK_SIZE;
