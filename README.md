@@ -20,7 +20,7 @@ This crate implements pseudo-random number generators (PRNG) using the AES block
 
 - `getrandom`: Provides secure seeding functionality based on the [`getrandom`](https://crates.io/crates/getrandom)
   crate.
-- `getrandom`: Implements the traits provided by the [`rand_core`](https://crates.io/crates/rand_core) crate.
+- `rand_core`: Implements the traits provided by the [`rand_core`](https://crates.io/crates/rand_core) crate.
 - `tls`: Provides thread local based utility functions for easy random number generation.
 
 This crate is `no_std` compatible when disabling the default features.
