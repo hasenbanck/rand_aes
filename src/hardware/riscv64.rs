@@ -669,7 +669,13 @@ unsafe fn aes256_key_expansion(key: [u64; 4]) -> [[u64; 2]; AES256_KEY_COUNT] {
     expanded_keys
 }
 
-#[cfg(all(test, not(feature = "force_fallback")))]
+#[cfg(all(
+    test,
+    not(any(
+        not(all(target_arch = "riscv64", target_feature = "zkne")),
+        feature = "force_fallback"
+    ))
+))]
 mod tests {
     use super::*;
     use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES_BLOCK_SIZE};

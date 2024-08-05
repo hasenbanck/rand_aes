@@ -5,12 +5,42 @@ use crate::secure_bytes;
 
 macro_rules! safely_call {
     ($what:expr) => {
-        #[cfg(not(feature = "force_fallback"))]
+        #[cfg(not(any(
+            not(any(
+                all(
+                    target_arch = "x86_64",
+                    target_feature = "sse2",
+                    target_feature = "aes",
+                ),
+                all(target_arch = "riscv64", target_feature = "zkne"),
+                all(
+                    target_arch = "aarch64",
+                    target_feature = "neon",
+                    target_feature = "aes",
+                ),
+            )),
+            feature = "force_fallback"
+        )))]
         unsafe {
             $what
         }
 
-        #[cfg(feature = "force_fallback")]
+        #[cfg(any(
+            not(any(
+                all(
+                    target_arch = "x86_64",
+                    target_feature = "sse2",
+                    target_feature = "aes",
+                ),
+                all(target_arch = "riscv64", target_feature = "zkne"),
+                all(
+                    target_arch = "aarch64",
+                    target_feature = "neon",
+                    target_feature = "aes",
+                ),
+            )),
+            feature = "force_fallback"
+        ))]
         $what
     };
 }
