@@ -60,7 +60,9 @@ fn verify_aes128_ctr64(key: [u8; AES128_KEY_SIZE], iv: [u8; AES_BLOCK_SIZE]) {
     let hardware = unsafe { Aes128Ctr64Hardware::from_seed_impl(key, nonce, ctr) };
 
     for _ in 0..u8::MAX {
-        assert_eq!(software.next_impl(), unsafe { hardware.next_impl() });
+        assert_eq!(software.next_impl().to_le_bytes(), unsafe {
+            hardware.next_impl().to_le_bytes()
+        });
     }
 }
 
@@ -69,7 +71,9 @@ fn verify_aes128_ctr128(key: [u8; AES128_KEY_SIZE], iv: [u8; AES_BLOCK_SIZE]) {
     let hardware = unsafe { Aes128Ctr128Hardware::from_seed_impl(key, iv) };
 
     for _ in 0..u8::MAX {
-        assert_eq!(software.next_impl(), unsafe { hardware.next_impl() });
+        assert_eq!(software.next_impl().to_le_bytes(), unsafe {
+            hardware.next_impl().to_le_bytes()
+        });
     }
 }
 
@@ -83,7 +87,9 @@ fn verify_aes256_ctr64(key: [u8; AES256_KEY_SIZE], iv: [u8; AES_BLOCK_SIZE]) {
     let hardware = unsafe { Aes256Ctr64Hardware::from_seed_impl(key, nonce, ctr) };
 
     for _ in 0..u8::MAX {
-        assert_eq!(software.next_impl(), unsafe { hardware.next_impl() });
+        assert_eq!(software.next_impl().to_le_bytes(), unsafe {
+            hardware.next_impl().to_le_bytes()
+        });
     }
 }
 
@@ -92,6 +98,8 @@ fn verify_aes256_ctr128(key: [u8; AES256_KEY_SIZE], iv: [u8; AES_BLOCK_SIZE]) {
     let hardware = unsafe { Aes256Ctr128Hardware::from_seed_impl(key, iv) };
 
     for _ in 0..u8::MAX {
-        assert_eq!(software.next_impl(), unsafe { hardware.next_impl() });
+        assert_eq!(software.next_impl().to_le_bytes(), unsafe {
+            hardware.next_impl().to_le_bytes()
+        });
     }
 }

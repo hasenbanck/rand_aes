@@ -66,10 +66,29 @@ We provide a software implementation of AES in case there is no hardware acceler
 accelerated versions for the following architectures:
 
 - aarch64: Support since Cortex-A53 (2012).
-- riscv64: Must support the scalar based cryptography extension (zk).
+- riscv64: Experimental using the vector crypto extension.
 - x86_64: Support since Intel's Westmere (2010) and AMD's Bulldozer (2011).
 
-riscv64 needs nightly Rust, since the AES intrinsics are not marked as stable yet.
+## Experimental RISC-V support
+
+There are two AES extensions for RISC-V, the scalar (zkn) and the vector crypto extensions (zvkn). Currently, there
+are no hardware based CPUs that support either of them. It's also not clear which platform will favor which. Since
+this crate mainly targets application class architectures (opposed to embedded), we think that providing a vector
+crypto implementation is the safest bet. Since there are no intrinsics for the vector crypto extension, we provide
+a handwritten ASM implementation. Since there is currently no way to discover the support for the vector crypto
+extension (August 2024), you need to select the needed target features and an experimental create feature at compile
+time. The generated executable will only run on systems with a vector crypto extension.
+
+Activate the target features vor the vector extension and the vector crypto extension. This can be done for example
+inside the `.cargo/config.toml`:
+
+```toml
+[target.'cfg(target_arch="riscv64")']
+rustflags = ["-C", "target-feature=+v,+zvkn"]
+```
+
+You also need to select the `experimental_riscv` create feature. This feature is experimental and will
+most likely become absolute in the future (once intrinsics and runtime discovery are available).
 
 ## Optimal Performance
 
@@ -83,7 +102,7 @@ much better performance. The runtime detection is not supported in `no_std`.
 Use the following target features for optimal performance:
 
 - aarch64: "aes" (using the cryptographic extension)
-- riscv64: "zkne" (using the scalar based cryptography extension)
+- riscv64: "v" and "zvkn" (using the vector and vector crypto extension)
 - x86_64: "aes" (using AES-NI)
 
 Example in `.cargo/config.toml`:
@@ -93,7 +112,7 @@ Example in `.cargo/config.toml`:
 rustflags = ["-C", "target-feature=+aes"]
 
 [target.'cfg(target_arch="riscv64")']
-rustflags = ["-C", "target-feature=+zkne"]
+rustflags = ["-C", "target-feature=+v,+zvkn"]
 
 [target.'cfg(target_arch="x86_64")']
 rustflags = ["-C", "target-feature=+aes"]

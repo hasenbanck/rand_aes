@@ -25,8 +25,8 @@ case $ARCH in
         qemu-aarch64 -cpu cortex-a53 -L /usr/aarch64-linux-gnu ../target/aarch64-unknown-linux-gnu/release/verification
         ;;
     "riscv64")
-        CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc cargo +nightly build --release --target=riscv64gc-unknown-linux-gnu
-        qemu-riscv64 -cpu rv64,zk=true -L /usr/riscv64-linux-gnu ../target/riscv64gc-unknown-linux-gnu/release/verification
+        CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc cargo build --release --target=riscv64gc-unknown-linux-gnu --no-default-features --features=experimental_riscv
+        qemu-riscv64 -cpu rv64,v=true,vlen=128,zvkn=true -L /usr/riscv64-linux-gnu ../target/riscv64gc-unknown-linux-gnu/release/verification
         ;;
     "x86_64")
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --target=x86_64-unknown-linux-gnu

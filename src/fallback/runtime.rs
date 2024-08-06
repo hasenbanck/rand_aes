@@ -23,10 +23,6 @@ pub(crate) fn has_hardware_acceleration() -> bool {
     {
         return true;
     }
-    #[cfg(target_arch = "riscv64")]
-    if std::arch::is_riscv_feature_detected!("zkne") {
-        return true;
-    }
 
     false
 }
@@ -265,9 +261,7 @@ impl Aes256Ctr64 {
                 // Safety: We checked that the hardware acceleration is available.
                 unsafe { this.next_impl() }
             }
-            Aes256Ctr64Inner::Software(this) => {
-                this.borrow_mut().next_impl()
-            },
+            Aes256Ctr64Inner::Software(this) => this.borrow_mut().next_impl(),
         }
     }
 }
