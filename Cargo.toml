@@ -53,3 +53,13 @@ harness = false
 [package.metadata.docs.rs]
 features = ["std", "tls", "getrandom", "rand_core"]
 rustdoc-args = ["--cfg", "docsrs"]
+
+# We have the verification binary as a member to use the same target folder.
+# But we then exclude it, because it would otherwise polute the tests with the
+# 'verification' feature, and we wouldn't be able to use "cargo test --workspace"
+# for example.
+[workspace]
+members = [
+    "verification",
+]
+exclude = ["verification"]
