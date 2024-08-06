@@ -2,7 +2,7 @@
 rustflags = ["-C", "target-feature=+neon,+aes"]
 
 [target.'cfg(target_arch="riscv64")']
-rustflags = ["-C", "target-feature=+zkne"]
+rustflags = ["-C", "target-feature=+v,+zvkn"]
 
 [target.'cfg(target_arch="x86_64")']
 rustflags = ["-C", "target-feature=+sse2,+aes"]

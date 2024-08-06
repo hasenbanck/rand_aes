@@ -23,16 +23,19 @@
 //! Use the following target features for optimal performance:
 //!
 //! - aarch64: `aes` (using the cryptographic extension)
-//! - riscv64: `zkne` (using the scalar based cryptography extension)
 //! - x86_64: `aes` (using AES-NI)
+//!
+//! There is experimental support for the RISC-V vector crypto extension. Please read the README.md
+//! for more information how to use it.
 //!
 //! ## Security Note
 //!
-//! While based on well-established cryptographic primitives, this PRNG is not intended for cryptographic key generation
-//! or other sensitive cryptographic operations, simply because safe, automatic re-seeding is not provided. We tested its
-//! statistical qualities by running versions with reduced rounds against `practrand` and `TESTu01`'s Big Crush.
-//! A version with just 3 rounds of AES encryption rounds passes the `practrand` tests with at least 16 TB.
-//! `TESTu01`'s Big Crush requires at least 5 rounds to be successfully cleared. AES-128 uses 10 rounds, whereas
+//! While based on well-established cryptographic primitives, this PRNG is not intended for
+//! cryptographic key generation or other sensitive cryptographic operations, simply because safe,
+//! automatic re-seeding is not provided. We tested its statistical qualities by running versions
+//! with reduced rounds against `practrand` and `TESTu01`'s Big Crush. A version with just 3 rounds
+//! of AES encryption rounds passes the `practrand` tests with at least 16 TB. `TESTu01`'s Big Crush
+//! requires at least 5 rounds to be successfully cleared. AES-128 uses 10 rounds, whereas
 //! AES-256 uses 14 rounds.
 //!
 //! ## Parallel Stream Generation
@@ -58,7 +61,6 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(feature = "verification", allow(unused))]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![cfg_attr(target_arch = "riscv64", feature(riscv_ext_intrinsics))]
 
 pub mod seeds;
 
@@ -75,9 +77,7 @@ mod traits;
             target_feature = "sse2",
             target_feature = "aes",
         ),
-        all(
-            target_arch = "riscv64", target_feature = "zkne"
-        ),
+        all(target_arch = "riscv64", feature = "experimental_riscv"),
         all(
             target_arch = "aarch64",
             target_feature = "neon",
@@ -97,9 +97,7 @@ pub(crate) mod fallback;
                 target_feature = "sse2",
                 target_feature = "aes",
             ),
-            all(
-                target_arch = "riscv64", target_feature = "zkne"
-            ),
+            all(target_arch = "riscv64", feature = "experimental_riscv"),
             all(
                 target_arch = "aarch64",
                 target_feature = "neon",
@@ -119,9 +117,7 @@ pub use fallback::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
             target_feature = "sse2",
             target_feature = "aes",
         ),
-        all(
-            target_arch = "riscv64", target_feature = "zkne"
-        ),
+        all(target_arch = "riscv64", feature = "experimental_riscv"),
         all(
             target_arch = "aarch64",
             target_feature = "neon",
@@ -142,9 +138,7 @@ pub use hardware::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
                     target_feature = "sse2",
                     target_feature = "aes",
                 ),
-                all(
-                    target_arch = "riscv64", target_feature = "zkne"
-                ),
+                all(target_arch = "riscv64", feature = "experimental_riscv"),
                 all(
                     target_arch = "aarch64",
                     target_feature = "neon",

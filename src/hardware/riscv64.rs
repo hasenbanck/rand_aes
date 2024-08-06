@@ -1,6 +1,6 @@
-use core::{arch::riscv64::*, cell::Cell};
+use core::{arch::asm, cell::Cell};
 
-use crate::constants::{AES128_KEY_COUNT, AES256_KEY_COUNT};
+use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES256_KEY_COUNT, AES256_KEY_SIZE};
 
 /// A random number generator based on the AES-128 block cipher that runs in CTR mode and has a
 /// period of 64-bit.
@@ -9,13 +9,13 @@ use crate::constants::{AES128_KEY_COUNT, AES256_KEY_COUNT};
 #[derive(Clone)]
 pub struct Aes128Ctr64 {
     counter: Cell<[u64; 2]>,
-    round_keys: Cell<[[u64; 2]; AES128_KEY_COUNT]>,
+    round_keys: Cell<[u128; AES128_KEY_COUNT]>,
 }
 
 impl Drop for Aes128Ctr64 {
     fn drop(&mut self) {
         self.counter.set([0, 0]);
-        self.round_keys.set([[0; 2]; AES128_KEY_COUNT]);
+        self.round_keys.set([0; AES128_KEY_COUNT]);
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -25,20 +25,16 @@ impl Aes128Ctr64 {
     pub(crate) const fn zeroed() -> Self {
         Self {
             counter: Cell::new([0; 2]),
-            round_keys: Cell::new([[0; 2]; AES128_KEY_COUNT]),
+            round_keys: Cell::new([0; AES128_KEY_COUNT]),
         }
     }
 
-    #[target_feature(enable = "zkne")]
     pub(crate) unsafe fn from_seed_impl(key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) -> Self {
-        let mut key_lo = [0u8; 8];
-        let mut key_hi = [0u8; 8];
-
-        key_lo.copy_from_slice(&key[0..8]);
-        key_hi.copy_from_slice(&key[8..16]);
+        let mut key_0 = [0u8; 16];
+        key_0.copy_from_slice(&key[0..16]);
 
         let counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
-        let key = [u64::from_le_bytes(key_lo), u64::from_le_bytes(key_hi)];
+        let key = u128::from_le_bytes(key_0);
 
         let round_keys = aes128_key_expansion(key);
 
@@ -48,16 +44,12 @@ impl Aes128Ctr64 {
         }
     }
 
-    #[target_feature(enable = "zkne")]
     pub(crate) unsafe fn seed_impl(&self, key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) {
-        let mut key_lo = [0u8; 8];
-        let mut key_hi = [0u8; 8];
-
-        key_lo.copy_from_slice(&key[0..8]);
-        key_hi.copy_from_slice(&key[8..16]);
+        let mut key_0 = [0u8; 16];
+        key_0.copy_from_slice(&key[0..16]);
 
         let counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
-        let key = [u64::from_le_bytes(key_lo), u64::from_le_bytes(key_hi)];
+        let key = u128::from_le_bytes(key_0);
 
         let round_keys = aes128_key_expansion(key);
 
@@ -73,8 +65,7 @@ impl Aes128Ctr64 {
         self.counter.get()[0]
     }
 
-    #[cfg_attr(target_feature = "zkne", inline(always))]
-    #[cfg_attr(not(target_feature = "zkne"), target_feature(enable = "zkne"))]
+    #[inline(always)]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         // Increment the lower 64 bits.
         let counter = self.counter.get();
@@ -83,49 +74,64 @@ impl Aes128Ctr64 {
         self.counter.set(new_counter);
 
         let round_keys = self.round_keys.get();
+        let mut round_keys_ptr = (&round_keys).as_ptr();
 
-        // We apply the AES encryption on the counter.
-        let mut state = [counter[0] ^ round_keys[0][0], counter[1] ^ round_keys[0][1]];
+        // Initialize the state with the counter.
+        let mut state = counter;
+        let state_ptr = (&mut state).as_mut_ptr();
 
-        let mut temp0 = aes64esm(state[0], state[1]);
-        let mut temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[1][0], temp1 ^ round_keys[1][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[2][0], temp1 ^ round_keys[2][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[3][0], temp1 ^ round_keys[3][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[4][0], temp1 ^ round_keys[4][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[5][0], temp1 ^ round_keys[5][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[6][0], temp1 ^ round_keys[6][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[7][0], temp1 ^ round_keys[7][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[8][0], temp1 ^ round_keys[8][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[9][0], temp1 ^ round_keys[9][1]];
-
-        temp0 = aes64es(state[0], state[1]);
-        temp1 = aes64es(state[1], state[0]);
-        state = [temp0 ^ round_keys[10][0], temp1 ^ round_keys[10][1]];
+        asm!(
+            "vsetivli x0, 4, e32, m1, ta, ma",
+            "vle32.v v0, (t0)", // Load counter into a register
+            "vle32.v v1, (t1)", // Copy all round keys into the vector registers
+            "addi t1, t1, 16",
+            "vle32.v v2, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v3, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v4, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v5, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v6, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v7, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v8, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v9, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v10, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v11, (t1)",
+            "vaesz.vs v0, v1", // Whiten the counter
+            "vaesem.vs v0, v2", // Apply 10 rounds of AES
+            "vaesem.vs v0, v3",
+            "vaesem.vs v0, v4",
+            "vaesem.vs v0, v5",
+            "vaesem.vs v0, v6",
+            "vaesem.vs v0, v7",
+            "vaesem.vs v0, v8",
+            "vaesem.vs v0, v9",
+            "vaesem.vs v0, v10",
+            "vaesef.vs v0, v11",
+            "vse32.v v0, (t0)", // Store the state
+            options(nostack),
+            in("t0") state_ptr,
+            inlateout("t1") round_keys_ptr,
+            out("v0") _,
+            out("v1") _,
+            out("v2") _,
+            out("v3") _,
+            out("v4") _,
+            out("v5") _,
+            out("v6") _,
+            out("v7") _,
+            out("v8") _,
+            out("v9") _,
+            out("v10") _,
+            out("v11") _,
+        );
 
         // Return the encrypted counter as u128.
         u128::from(state[0]) | (u128::from(state[1]) << 64)
@@ -139,13 +145,13 @@ impl Aes128Ctr64 {
 #[derive(Clone)]
 pub struct Aes128Ctr128 {
     counter: Cell<u128>,
-    round_keys: Cell<[[u64; 2]; AES128_KEY_COUNT]>,
+    round_keys: Cell<[u128; AES128_KEY_COUNT]>,
 }
 
 impl Drop for Aes128Ctr128 {
     fn drop(&mut self) {
         self.counter.set(0);
-        self.round_keys.set([[0; 2]; AES128_KEY_COUNT]);
+        self.round_keys.set([0; AES128_KEY_COUNT]);
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -163,16 +169,12 @@ impl Aes128Ctr128 {
         clone
     }
 
-    #[target_feature(enable = "zkne")]
     pub(crate) unsafe fn from_seed_impl(key: [u8; 16], counter: [u8; 16]) -> Self {
-        let mut key_lo = [0u8; 8];
-        let mut key_hi = [0u8; 8];
-
-        key_lo.copy_from_slice(&key[0..8]);
-        key_hi.copy_from_slice(&key[8..16]);
+        let mut key_0 = [0u8; 16];
+        key_0.copy_from_slice(&key[0..16]);
 
         let counter = u128::from_le_bytes(counter);
-        let key = [u64::from_le_bytes(key_lo), u64::from_le_bytes(key_hi)];
+        let key = u128::from_le_bytes(key_0);
 
         let round_keys = aes128_key_expansion(key);
 
@@ -182,16 +184,12 @@ impl Aes128Ctr128 {
         }
     }
 
-    #[target_feature(enable = "zkne")]
     pub(crate) unsafe fn seed_impl(&self, key: [u8; 16], counter: [u8; 16]) {
-        let mut key_lo = [0u8; 8];
-        let mut key_hi = [0u8; 8];
-
-        key_lo.copy_from_slice(&key[0..8]);
-        key_hi.copy_from_slice(&key[8..16]);
+        let mut key_0 = [0u8; 16];
+        key_0.copy_from_slice(&key[0..16]);
 
         let counter = u128::from_le_bytes(counter);
-        let key = [u64::from_le_bytes(key_lo), u64::from_le_bytes(key_hi)];
+        let key = u128::from_le_bytes(key_0);
 
         let round_keys = aes128_key_expansion(key);
 
@@ -207,65 +205,74 @@ impl Aes128Ctr128 {
         self.counter.get()
     }
 
-    #[cfg_attr(target_feature = "zkne", inline(always))]
-    #[cfg_attr(not(target_feature = "zkne"), target_feature(enable = "zkne"))]
+    #[inline(always)]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         // Increment the counter.
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
         let round_keys = self.round_keys.get();
-        let counter_low = counter as u64;
-        let counter_high = (counter >> 64) as u64;
+        let mut round_keys_ptr = (&round_keys).as_ptr();
 
-        // We apply the AES encryption on the counter.
-        let mut state = [
-            counter_low ^ round_keys[0][0],
-            counter_high ^ round_keys[0][1],
-        ];
+        // Initialize the state with the counter.
+        let mut state = counter;
+        let state_ptr = (&mut state) as *mut u128;
 
-        let mut temp0 = aes64esm(state[0], state[1]);
-        let mut temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[1][0], temp1 ^ round_keys[1][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[2][0], temp1 ^ round_keys[2][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[3][0], temp1 ^ round_keys[3][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[4][0], temp1 ^ round_keys[4][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[5][0], temp1 ^ round_keys[5][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[6][0], temp1 ^ round_keys[6][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[7][0], temp1 ^ round_keys[7][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[8][0], temp1 ^ round_keys[8][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[9][0], temp1 ^ round_keys[9][1]];
-
-        temp0 = aes64es(state[0], state[1]);
-        temp1 = aes64es(state[1], state[0]);
-        state = [temp0 ^ round_keys[10][0], temp1 ^ round_keys[10][1]];
+        asm!(
+            "vsetivli x0, 4, e32, m1, ta, ma",
+            "vle32.v v0, (t0)", // Load counter into a register
+            "vle32.v v1, (t1)", // Copy all round keys into the vector registers
+            "addi t1, t1, 16",
+            "vle32.v v2, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v3, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v4, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v5, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v6, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v7, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v8, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v9, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v10, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v11, (t1)",
+            "vaesz.vs v0, v1", // Whiten the counter
+            "vaesem.vs v0, v2", // Apply 10 rounds of AES
+            "vaesem.vs v0, v3",
+            "vaesem.vs v0, v4",
+            "vaesem.vs v0, v5",
+            "vaesem.vs v0, v6",
+            "vaesem.vs v0, v7",
+            "vaesem.vs v0, v8",
+            "vaesem.vs v0, v9",
+            "vaesem.vs v0, v10",
+            "vaesef.vs v0, v11",
+            "vse32.v v0, (t0)", // Store the state
+            options(nostack),
+            in("t0") state_ptr,
+            inlateout("t1") round_keys_ptr,
+            out("v0") _,
+            out("v1") _,
+            out("v2") _,
+            out("v3") _,
+            out("v4") _,
+            out("v5") _,
+            out("v6") _,
+            out("v7") _,
+            out("v8") _,
+            out("v9") _,
+            out("v10") _,
+            out("v11") _,
+        );
 
         // Return the encrypted counter as u128.
-        u128::from(state[0]) | (u128::from(state[1]) << 64)
+        state
     }
 }
 
@@ -276,37 +283,27 @@ impl Aes128Ctr128 {
 #[derive(Clone)]
 pub struct Aes256Ctr64 {
     counter: Cell<[u64; 2]>,
-    round_keys: Cell<[[u64; 2]; AES256_KEY_COUNT]>,
+    round_keys: Cell<[u128; AES256_KEY_COUNT]>,
 }
 
 impl Drop for Aes256Ctr64 {
     fn drop(&mut self) {
         self.counter.set([0, 0]);
-        self.round_keys.set([[0; 2]; AES256_KEY_COUNT]);
+        self.round_keys.set([0; AES256_KEY_COUNT]);
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
 
 impl Aes256Ctr64 {
-    #[target_feature(enable = "zkne")]
     pub(crate) unsafe fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
-        let mut key_0 = [0u8; 8];
-        let mut key_1 = [0u8; 8];
-        let mut key_2 = [0u8; 8];
-        let mut key_3 = [0u8; 8];
+        let mut key_0 = [0u8; 16];
+        let mut key_1 = [0u8; 16];
 
-        key_0.copy_from_slice(&key[0..8]);
-        key_1.copy_from_slice(&key[8..16]);
-        key_2.copy_from_slice(&key[16..24]);
-        key_3.copy_from_slice(&key[24..32]);
+        key_0.copy_from_slice(&key[0..16]);
+        key_1.copy_from_slice(&key[16..32]);
 
         let counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
-        let key = [
-            u64::from_le_bytes(key_0),
-            u64::from_le_bytes(key_1),
-            u64::from_le_bytes(key_2),
-            u64::from_le_bytes(key_3),
-        ];
+        let key = [u128::from_le_bytes(key_0), u128::from_le_bytes(key_1)];
 
         let round_keys = aes256_key_expansion(key);
 
@@ -316,25 +313,15 @@ impl Aes256Ctr64 {
         }
     }
 
-    #[target_feature(enable = "zkne")]
     pub(crate) unsafe fn seed_impl(&self, key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) {
-        let mut key_0 = [0u8; 8];
-        let mut key_1 = [0u8; 8];
-        let mut key_2 = [0u8; 8];
-        let mut key_3 = [0u8; 8];
+        let mut key_0 = [0u8; 16];
+        let mut key_1 = [0u8; 16];
 
-        key_0.copy_from_slice(&key[0..8]);
-        key_1.copy_from_slice(&key[8..16]);
-        key_2.copy_from_slice(&key[16..24]);
-        key_3.copy_from_slice(&key[24..32]);
+        key_0.copy_from_slice(&key[0..16]);
+        key_1.copy_from_slice(&key[16..32]);
 
         let counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
-        let key = [
-            u64::from_le_bytes(key_0),
-            u64::from_le_bytes(key_1),
-            u64::from_le_bytes(key_2),
-            u64::from_le_bytes(key_3),
-        ];
+        let key = [u128::from_le_bytes(key_0), u128::from_le_bytes(key_1)];
 
         let round_keys = aes256_key_expansion(key);
 
@@ -350,8 +337,7 @@ impl Aes256Ctr64 {
         self.counter.get()[0]
     }
 
-    #[cfg_attr(target_feature = "zkne", inline(always))]
-    #[cfg_attr(not(target_feature = "zkne"), target_feature(enable = "zkne"))]
+    #[inline(always)]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         // Increment the lower 64 bits.
         let counter = self.counter.get();
@@ -360,65 +346,80 @@ impl Aes256Ctr64 {
         self.counter.set(new_counter);
 
         let round_keys = self.round_keys.get();
+        let mut round_keys_ptr = (&round_keys).as_ptr();
 
-        // We apply the AES encryption on the counter.
-        let mut state = [counter[0] ^ round_keys[0][0], counter[1] ^ round_keys[0][1]];
+        // Initialize the state with the counter.
+        let mut state = counter;
+        let state_ptr = (&mut state).as_mut_ptr();
 
-        let mut temp0 = aes64esm(state[0], state[1]);
-        let mut temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[1][0], temp1 ^ round_keys[1][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[2][0], temp1 ^ round_keys[2][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[3][0], temp1 ^ round_keys[3][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[4][0], temp1 ^ round_keys[4][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[5][0], temp1 ^ round_keys[5][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[6][0], temp1 ^ round_keys[6][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[7][0], temp1 ^ round_keys[7][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[8][0], temp1 ^ round_keys[8][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[9][0], temp1 ^ round_keys[9][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[10][0], temp1 ^ round_keys[10][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[11][0], temp1 ^ round_keys[11][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[12][0], temp1 ^ round_keys[12][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[13][0], temp1 ^ round_keys[13][1]];
-
-        temp0 = aes64es(state[0], state[1]);
-        temp1 = aes64es(state[1], state[0]);
-        state = [temp0 ^ round_keys[14][0], temp1 ^ round_keys[14][1]];
+        asm!(
+            "vsetivli x0, 4, e32, m1, ta, ma",
+            "vle32.v v0, (t0)", // Load counter into a register
+            "vle32.v v1, (t1)", // Copy all round keys into the vector registers
+            "addi t1, t1, 16",
+            "vle32.v v2, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v3, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v4, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v5, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v6, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v7, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v8, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v9, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v10, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v11, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v12, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v13, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v14, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v15, (t1)",
+            "vaesz.vs v0, v1", // Whiten the counter
+            "vaesem.vs v0, v2", // Apply 14 rounds of AES
+            "vaesem.vs v0, v3",
+            "vaesem.vs v0, v4",
+            "vaesem.vs v0, v5",
+            "vaesem.vs v0, v6",
+            "vaesem.vs v0, v7",
+            "vaesem.vs v0, v8",
+            "vaesem.vs v0, v9",
+            "vaesem.vs v0, v10",
+            "vaesem.vs v0, v11",
+            "vaesem.vs v0, v12",
+            "vaesem.vs v0, v13",
+            "vaesem.vs v0, v14",
+            "vaesef.vs v0, v15",
+            "vse32.v v0, (t0)", // Store the state
+            options(nostack),
+            in("t0") state_ptr,
+            inlateout("t1") round_keys_ptr,
+            out("v0") _,
+            out("v1") _,
+            out("v2") _,
+            out("v3") _,
+            out("v4") _,
+            out("v5") _,
+            out("v6") _,
+            out("v7") _,
+            out("v8") _,
+            out("v9") _,
+            out("v10") _,
+            out("v11") _,
+            out("v12") _,
+            out("v13") _,
+            out("v14") _,
+            out("v15") _,
+        );
 
         // Return the encrypted counter as u128.
         u128::from(state[0]) | (u128::from(state[1]) << 64)
@@ -432,13 +433,13 @@ impl Aes256Ctr64 {
 #[derive(Clone)]
 pub struct Aes256Ctr128 {
     counter: Cell<u128>,
-    round_keys: Cell<[[u64; 2]; AES256_KEY_COUNT]>,
+    round_keys: Cell<[u128; AES256_KEY_COUNT]>,
 }
 
 impl Drop for Aes256Ctr128 {
     fn drop(&mut self) {
         self.counter.set(0);
-        self.round_keys.set([[0; 2]; AES256_KEY_COUNT]);
+        self.round_keys.set([0; AES256_KEY_COUNT]);
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -456,25 +457,15 @@ impl Aes256Ctr128 {
         clone
     }
 
-    #[target_feature(enable = "zkne")]
     pub(crate) unsafe fn from_seed_impl(key: [u8; 32], counter: [u8; 16]) -> Self {
-        let mut key_0 = [0u8; 8];
-        let mut key_1 = [0u8; 8];
-        let mut key_2 = [0u8; 8];
-        let mut key_3 = [0u8; 8];
+        let mut key_0 = [0u8; 16];
+        let mut key_1 = [0u8; 16];
 
-        key_0.copy_from_slice(&key[0..8]);
-        key_1.copy_from_slice(&key[8..16]);
-        key_2.copy_from_slice(&key[16..24]);
-        key_3.copy_from_slice(&key[24..32]);
+        key_0.copy_from_slice(&key[0..16]);
+        key_1.copy_from_slice(&key[16..32]);
 
         let counter = u128::from_le_bytes(counter);
-        let key = [
-            u64::from_le_bytes(key_0),
-            u64::from_le_bytes(key_1),
-            u64::from_le_bytes(key_2),
-            u64::from_le_bytes(key_3),
-        ];
+        let key = [u128::from_le_bytes(key_0), u128::from_le_bytes(key_1)];
 
         let round_keys = aes256_key_expansion(key);
 
@@ -488,25 +479,15 @@ impl Aes256Ctr128 {
         self.counter.get()
     }
 
-    #[target_feature(enable = "zkne")]
     pub(crate) unsafe fn seed_impl(&self, key: [u8; 32], counter: [u8; 16]) {
-        let mut key_0 = [0u8; 8];
-        let mut key_1 = [0u8; 8];
-        let mut key_2 = [0u8; 8];
-        let mut key_3 = [0u8; 8];
+        let mut key_0 = [0u8; 16];
+        let mut key_1 = [0u8; 16];
 
-        key_0.copy_from_slice(&key[0..8]);
-        key_1.copy_from_slice(&key[8..16]);
-        key_2.copy_from_slice(&key[16..24]);
-        key_3.copy_from_slice(&key[24..32]);
+        key_0.copy_from_slice(&key[0..16]);
+        key_1.copy_from_slice(&key[16..32]);
 
         let counter = u128::from_le_bytes(counter);
-        let key = [
-            u64::from_le_bytes(key_0),
-            u64::from_le_bytes(key_1),
-            u64::from_le_bytes(key_2),
-            u64::from_le_bytes(key_3),
-        ];
+        let key = [u128::from_le_bytes(key_0), u128::from_le_bytes(key_1)];
 
         let round_keys = aes256_key_expansion(key);
 
@@ -518,164 +499,204 @@ impl Aes256Ctr128 {
         true
     }
 
-    #[cfg_attr(target_feature = "zkne", inline(always))]
-    #[cfg_attr(not(target_feature = "zkne"), target_feature(enable = "zkne"))]
+    #[inline(always)]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         // Increment the counter.
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
         let round_keys = self.round_keys.get();
-        let counter_low = counter as u64;
-        let counter_high = (counter >> 64) as u64;
+        let mut round_keys_ptr = (&round_keys).as_ptr();
 
-        // We apply the AES encryption on the counter.
-        let mut state = [
-            counter_low ^ round_keys[0][0],
-            counter_high ^ round_keys[0][1],
-        ];
+        // Initialize the state with the counter.
+        let mut state = counter;
+        let state_ptr = (&mut state) as *mut u128;
 
-        let mut temp0 = aes64esm(state[0], state[1]);
-        let mut temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[1][0], temp1 ^ round_keys[1][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[2][0], temp1 ^ round_keys[2][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[3][0], temp1 ^ round_keys[3][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[4][0], temp1 ^ round_keys[4][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[5][0], temp1 ^ round_keys[5][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[6][0], temp1 ^ round_keys[6][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[7][0], temp1 ^ round_keys[7][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[8][0], temp1 ^ round_keys[8][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[9][0], temp1 ^ round_keys[9][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[10][0], temp1 ^ round_keys[10][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[11][0], temp1 ^ round_keys[11][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[12][0], temp1 ^ round_keys[12][1]];
-
-        temp0 = aes64esm(state[0], state[1]);
-        temp1 = aes64esm(state[1], state[0]);
-        state = [temp0 ^ round_keys[13][0], temp1 ^ round_keys[13][1]];
-
-        temp0 = aes64es(state[0], state[1]);
-        temp1 = aes64es(state[1], state[0]);
-        state = [temp0 ^ round_keys[14][0], temp1 ^ round_keys[14][1]];
+        asm!(
+            "vsetivli x0, 4, e32, m1, ta, ma",
+            "vle32.v v0, (t0)", // Load counter into a register
+            "vle32.v v1, (t1)", // Copy all round keys into the vector registers
+            "addi t1, t1, 16",
+            "vle32.v v2, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v3, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v4, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v5, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v6, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v7, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v8, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v9, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v10, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v11, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v12, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v13, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v14, (t1)",
+            "addi t1, t1, 16",
+            "vle32.v v15, (t1)",
+            "vaesz.vs v0, v1", // Whiten the counter
+            "vaesem.vs v0, v2", // Apply 14 rounds of AES
+            "vaesem.vs v0, v3",
+            "vaesem.vs v0, v4",
+            "vaesem.vs v0, v5",
+            "vaesem.vs v0, v6",
+            "vaesem.vs v0, v7",
+            "vaesem.vs v0, v8",
+            "vaesem.vs v0, v9",
+            "vaesem.vs v0, v10",
+            "vaesem.vs v0, v11",
+            "vaesem.vs v0, v12",
+            "vaesem.vs v0, v13",
+            "vaesem.vs v0, v14",
+            "vaesef.vs v0, v15",
+            "vse32.v v0, (t0)", // Store the state
+            options(nostack),
+            in("t0") state_ptr,
+            inlateout("t1") round_keys_ptr,
+            out("v0") _,
+            out("v1") _,
+            out("v2") _,
+            out("v3") _,
+            out("v4") _,
+            out("v5") _,
+            out("v6") _,
+            out("v7") _,
+            out("v8") _,
+            out("v9") _,
+            out("v10") _,
+            out("v11") _,
+            out("v12") _,
+            out("v13") _,
+            out("v14") _,
+            out("v15") _,
+        );
 
         // Return the encrypted counter as u128.
-        u128::from(state[0]) | (u128::from(state[1]) << 64)
+        state
     }
 }
 
-#[target_feature(enable = "zkne")]
-unsafe fn aes128_key_expansion(key: [u64; 2]) -> [[u64; 2]; AES128_KEY_COUNT] {
-    unsafe fn generate_round_key<const RNUM: u8>(expanded_keys: &mut [[u64; 2]]) {
-        let prev_key = expanded_keys[RNUM as usize];
+unsafe fn aes128_key_expansion(key: u128) -> [u128; AES128_KEY_COUNT] {
+    let mut expanded_keys = [0u128; AES128_KEY_COUNT];
+    let key_ptr = &key as *const u128;
+    let mut expanded_ptr = (&mut expanded_keys).as_mut_ptr();
 
-        let temp = aes64ks1i::<RNUM>(prev_key[1]);
-        let rk0 = aes64ks2(temp, prev_key[0]);
-        let rk1 = aes64ks2(rk0, prev_key[1]);
-
-        expanded_keys[RNUM as usize + 1] = [rk0, rk1];
-    }
-    let mut expanded_keys = [[0u64; 2]; AES128_KEY_COUNT];
-
-    // Load the initial key.
-    expanded_keys[0] = [key[0], key[1]];
-
-    // The actual key expansion.
-    generate_round_key::<0>(&mut expanded_keys);
-    generate_round_key::<1>(&mut expanded_keys);
-    generate_round_key::<2>(&mut expanded_keys);
-    generate_round_key::<3>(&mut expanded_keys);
-    generate_round_key::<4>(&mut expanded_keys);
-    generate_round_key::<5>(&mut expanded_keys);
-    generate_round_key::<6>(&mut expanded_keys);
-    generate_round_key::<7>(&mut expanded_keys);
-    generate_round_key::<8>(&mut expanded_keys);
-    generate_round_key::<9>(&mut expanded_keys);
+    asm!(
+        "vsetivli x0, 4, e32, m4, ta, ma",
+        "vle32.v v0, (t0)", // Load key as state and copy into expanded
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 1", // Round 1
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 2", // Round 2
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 3", // Round 3
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 4", // Round 4
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 5", // Round 5
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 6", // Round 6
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 7", // Round 7
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 8", // Round 8
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 9", // Round 9
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf1.vi v0, v0, 10", // Round 10
+        "add t1, t1, 16",
+        "vse32.v v0, (t1)",
+        in("t0") key_ptr,
+        inlateout("t1") expanded_ptr,
+        options(nostack),
+        out("v0") _,
+    );
 
     expanded_keys
 }
 
-#[target_feature(enable = "zkne")]
-unsafe fn aes256_key_expansion(key: [u64; 4]) -> [[u64; 2]; AES256_KEY_COUNT] {
-    unsafe fn generate_round_keys<const RNUM: u8>(
-        expanded_keys: &mut [[u64; 2]; AES256_KEY_COUNT],
-    ) {
-        let prev_key_0 = expanded_keys[RNUM as usize * 2];
-        let prev_key_1 = expanded_keys[(RNUM as usize * 2) + 1];
+unsafe fn aes256_key_expansion(key: [u128; 2]) -> [u128; AES256_KEY_COUNT] {
+    let mut expanded_keys = [0u128; AES256_KEY_COUNT];
+    let mut key_ptr = &key as *const u128;
+    let mut expanded_ptr = (&mut expanded_keys).as_mut_ptr();
 
-        let temp = aes64ks1i::<RNUM>(prev_key_1[1]);
-
-        let rk0 = aes64ks2(temp, prev_key_0[0]);
-        let rk1 = aes64ks2(rk0, prev_key_0[1]);
-
-        expanded_keys[(RNUM as usize * 2) + 2] = [rk0, rk1];
-
-        if RNUM < 6 {
-            let temp = aes64ks1i::<0xA>(rk1);
-
-            let rk2 = aes64ks2(temp, prev_key_1[0]);
-            let rk3 = aes64ks2(rk2, prev_key_1[1]);
-
-            expanded_keys[(RNUM as usize * 2) + 3] = [rk2, rk3];
-        }
-    }
-    let mut expanded_keys = [[0u64; 2]; AES256_KEY_COUNT];
-
-    // Load the initial key.
-    expanded_keys[0] = [key[0], key[1]];
-    expanded_keys[1] = [key[2], key[3]];
-
-    // The actual key expansion.
-    generate_round_keys::<0>(&mut expanded_keys);
-    generate_round_keys::<1>(&mut expanded_keys);
-    generate_round_keys::<2>(&mut expanded_keys);
-    generate_round_keys::<3>(&mut expanded_keys);
-    generate_round_keys::<4>(&mut expanded_keys);
-    generate_round_keys::<5>(&mut expanded_keys);
-    generate_round_keys::<6>(&mut expanded_keys);
+    asm!(
+        "vsetivli x0, 4, e32, m4, ta, ma",
+        "vle32.v v0, (t0)",
+        "addi t0, t0, 16",
+        "vle32.v v4, (t0)",
+        "vse32.v v0, (t1)",
+        "add t1, t1, 16",
+        "vse32.v v4, (t1)",
+        "vaeskf2.vi v0, v4, 2", // Round 2
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf2.vi v4, v0, 3", // Round 3
+        "addi t1, t1, 16",
+        "vse32.v v4, (t1)",
+        "vaeskf2.vi v0, v4, 4", // Round 4
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf2.vi v4, v0, 5", // Round 5
+        "addi t1, t1, 16",
+        "vse32.v v4, (t1)",
+        "vaeskf2.vi v0, v4, 6", // Round 6
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf2.vi v4, v0, 7", // Round 7
+        "addi t1, t1, 16",
+        "vse32.v v4, (t1)",
+        "vaeskf2.vi v0, v4, 8", // Round 8
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf2.vi v4, v0, 9", // Round 9
+        "addi t1, t1, 16",
+        "vse32.v v4, (t1)",
+        "vaeskf2.vi v0, v4, 10", // Round 10
+        "addi t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf2.vi v4, v0, 11", // Round 11
+        "add t1, t1, 16",
+        "vse32.v v4, (t1)",
+        "vaeskf2.vi v0, v4, 12", // Round 12
+        "add t1, t1, 16",
+        "vse32.v v0, (t1)",
+        "vaeskf2.vi v4, v0, 13", // Round 13
+        "add t1, t1, 16",
+        "vse32.v v4, (t1)",
+        "vaeskf2.vi v0, v4, 14", // Round 14
+        "add t1, t1, 16",
+        "vse32.v v0, (t1)",
+        inlateout("t0") key_ptr,
+        inlateout("t1") expanded_ptr,
+        options(nostack),
+        out("v0") _,
+        out("v4") _,
+    );
 
     expanded_keys
 }
 
-#[cfg(all(
-    test,
-    not(any(
-        not(all(target_arch = "riscv64", target_feature = "zkne")),
-        feature = "force_fallback"
-    ))
-))]
+#[cfg(all(test, not(feature = "force_fallback")))]
 mod tests {
     use super::*;
     use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES_BLOCK_SIZE};
@@ -684,16 +705,14 @@ mod tests {
     #[test]
     fn test_aes128_key_expansion() {
         aes128_key_expansion_test(|key| {
-            let mut key_lo = [0u8; 8];
-            let mut key_hi = [0u8; 8];
-            key_lo.copy_from_slice(&key[0..8]);
-            key_hi.copy_from_slice(&key[8..16]);
-            let key = [u64::from_le_bytes(key_lo), u64::from_le_bytes(key_hi)];
+            let mut key = [0u8; 16];
+            key.copy_from_slice(&key[0..16]);
+            let key = u128::from_le_bytes(key);
 
-            let expanded: [[u64; 2]; AES128_KEY_COUNT] = unsafe { aes128_key_expansion(key) };
+            let expanded: [u128; AES128_KEY_COUNT] = unsafe { aes128_key_expansion(key) };
             let expanded: [[u8; AES_BLOCK_SIZE]; AES128_KEY_COUNT] = unsafe {
                 core::mem::transmute::<
-                    [[u64; 2]; AES128_KEY_COUNT],
+                    [u128; AES128_KEY_COUNT],
                     [[u8; AES_BLOCK_SIZE]; AES128_KEY_COUNT],
                 >(expanded)
             };
@@ -704,25 +723,16 @@ mod tests {
     #[test]
     fn test_aes256_key_expansion() {
         aes256_key_expansion_test(|key| {
-            let mut key_0_lo = [0u8; 8];
-            let mut key_0_hi = [0u8; 8];
-            let mut key_1_lo = [0u8; 8];
-            let mut key_1_hi = [0u8; 8];
-            key_0_lo.copy_from_slice(&key[0..8]);
-            key_0_hi.copy_from_slice(&key[8..16]);
-            key_1_lo.copy_from_slice(&key[16..24]);
-            key_1_hi.copy_from_slice(&key[24..32]);
-            let key = [
-                u64::from_le_bytes(key_0_lo),
-                u64::from_le_bytes(key_0_hi),
-                u64::from_le_bytes(key_1_lo),
-                u64::from_le_bytes(key_1_hi),
-            ];
+            let mut key_0 = [0u8; 16];
+            let mut key_1 = [0u8; 16];
+            key_0.copy_from_slice(&key[0..16]);
+            key_1.copy_from_slice(&key[16..32]);
+            let key = [u128::from_le_bytes(key_0), u128::from_le_bytes(key_1)];
 
-            let expanded: [[u64; 2]; AES256_KEY_COUNT] = unsafe { aes256_key_expansion(key) };
+            let expanded: [u128; AES256_KEY_COUNT] = unsafe { aes256_key_expansion(key) };
             let expanded: [[u8; AES_BLOCK_SIZE]; AES256_KEY_COUNT] = unsafe {
                 core::mem::transmute::<
-                    [[u64; 2]; AES256_KEY_COUNT],
+                    [u128; AES256_KEY_COUNT],
                     [[u8; AES_BLOCK_SIZE]; AES256_KEY_COUNT],
                 >(expanded)
             };

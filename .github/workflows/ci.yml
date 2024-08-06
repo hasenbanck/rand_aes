@@ -19,17 +19,14 @@ jobs:
           - name: Linux x86_64
             os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
-            channel: stable
 
           - name: Linux riscv64gc
             os: ubuntu-24.04
             target: riscv64gc-unknown-linux-gnu
-            channel: nightly
 
           - name: MacOS aarch64
             os: macos-latest
             target: aarch64-apple-darwin
-            channel: stable
 
     name: Clippy ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -40,8 +37,8 @@ jobs:
 
       - name: Install toolchain
         run: |
-          rustup toolchain install ${{ matrix.channel }} --no-self-update --profile=minimal --component clippy --target ${{ matrix.target }}
-          rustup override set ${{ matrix.channel }}
+          rustup toolchain install stable --no-self-update --profile=minimal --component clippy --target ${{ matrix.target }}
+          rustup override set stable
           cargo -V
 
       - name: Caching
@@ -139,16 +136,13 @@ jobs:
           - name: aarch64
             arch: aarch64
             target: aarch64-unknown-linux-gnu
-            channel: stable
             cpu: a64fx
           - name: riscv64
             arch: riscv64
             target: riscv64gc-unknown-linux-gnu
-            channel: nightly
           - name: x86_64
             arch: x86-64
             target: x86_64-unknown-linux-gnu
-            channel: stable
 
     name: Validate ${{ matrix.name }}
     runs-on: ubuntu-24.04
@@ -165,8 +159,8 @@ jobs:
 
       - name: Install toolchain
         run: |
-          rustup toolchain install ${{ matrix.channel }} --no-self-update --profile=minimal --target ${{ matrix.target }}
-          rustup override set ${{ matrix.channel }}
+          rustup toolchain install stable --no-self-update --profile=minimal --target ${{ matrix.target }}
+          rustup override set stable
           cargo -V
 
       - name: Caching

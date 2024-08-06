@@ -18,6 +18,8 @@ default = ["std", "tls", "getrandom", "rand_core"]
 std = []
 # Activates the thread local functionality.
 tls = ["std"]
+# Enables support for experimental RISC-V vector cryptography extension. Please read the README.md.
+experimental_riscv = []
 
 ### The following features are only used internally and are unstable ###
 # Forces the compiler to always use the fallback (never using the hardware AES directly).

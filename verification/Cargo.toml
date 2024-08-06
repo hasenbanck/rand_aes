@@ -4,8 +4,13 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
+[features]
+experimental_riscv = ["rand_aes/experimental_riscv"]
+force_fallback = ["rand_aes/force_fallback"]
+force_no_runtime_detection = ["rand_aes/force_no_runtime_detection"]
+
 [dependencies]
-rand_aes =  { path = "..", features = ["verification"] }
+rand_aes = { path = "..", features = ["verification"] }
 
 [[bin]]
 name = "verification"
