@@ -13,7 +13,7 @@ use crate::fallback::software::Aes256Ctr64 as Aes256Ctr64Software;
 
 #[allow(unused)]
 pub(crate) fn has_hardware_acceleration() -> bool {
-    #[cfg(target_arch = "x86_64")]
+    #[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
     if std::arch::is_x86_feature_detected!("sse2") && std::arch::is_x86_feature_detected!("aes") {
         return true;
     }

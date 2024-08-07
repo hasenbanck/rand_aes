@@ -8,7 +8,7 @@ macro_rules! safely_call {
         #[cfg(not(any(
             not(any(
                 all(
-                    target_arch = "x86_64",
+                    any(target_arch = "x86_64", target_arch = "x86"),
                     target_feature = "sse2",
                     target_feature = "aes",
                 ),
@@ -28,7 +28,7 @@ macro_rules! safely_call {
         #[cfg(any(
             not(any(
                 all(
-                    target_arch = "x86_64",
+                    any(target_arch = "x86_64", target_arch = "x86"),
                     target_feature = "sse2",
                     target_feature = "aes",
                 ),
