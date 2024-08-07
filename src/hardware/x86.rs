@@ -1,5 +1,9 @@
 use core::cell::Cell;
 
+#[cfg(target_arch = "x86")]
+use core::arch::x86::*;
+
+#[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
 use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES256_KEY_COUNT, AES256_KEY_SIZE};

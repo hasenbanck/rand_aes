@@ -2,22 +2,22 @@
 pub mod aarch64;
 #[cfg(target_arch = "riscv64")]
 pub mod riscv64;
-#[cfg(target_arch = "x86_64")]
-pub mod x86_64;
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+pub mod x86;
 
 #[cfg(target_arch = "aarch64")]
 pub use aarch64::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
 #[cfg(target_arch = "riscv64")]
 pub use riscv64::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
-#[cfg(target_arch = "x86_64")]
-pub use x86_64::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+pub use x86::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
 
 #[cfg(all(
     test,
     not(any(
         not(any(
             all(
-                target_arch = "x86_64",
+                any(target_arch = "x86_64", target_arch = "x86"),
                 target_feature = "sse2",
                 target_feature = "aes",
             ),

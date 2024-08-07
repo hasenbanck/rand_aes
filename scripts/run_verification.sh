@@ -9,7 +9,7 @@ set -euo pipefail
 set +u
 if [ -z "$1" ]; then
     echo "Usage: $0 <architecture>"
-    echo "Supported architectures: aarch64, riscv64, x86_64"
+    echo "Supported architectures: aarch64, riscv64, x86, x86_64"
     exit 1
 fi
 set -u
@@ -27,6 +27,10 @@ case $ARCH in
     "riscv64")
         CARGO_TARGET_RISCV64GC_UNKNOWN_LINUX_GNU_LINKER=riscv64-linux-gnu-gcc cargo build --release --target=riscv64gc-unknown-linux-gnu --no-default-features --features=experimental_riscv
         qemu-riscv64 -cpu rv64,v=true,vlen=128,zvkn=true -L /usr/riscv64-linux-gnu ../target/riscv64gc-unknown-linux-gnu/release/verification
+        ;;
+    "x86")
+        CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_LINKER=i686-linux-gnu-gcc cargo build --release --target=i686-unknown-linux-gnu
+        qemu-i386 -cpu Westmere -L /usr/i686-linux-gnu ../target/i686-unknown-linux-gnu/release/verification
         ;;
     "x86_64")
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=x86_64-linux-gnu-gcc cargo build --release --target=x86_64-unknown-linux-gnu

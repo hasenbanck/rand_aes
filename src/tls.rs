@@ -13,7 +13,7 @@ use crate::Random;
 #[cfg(not(any(
     not(any(
         all(
-            target_arch = "x86_64",
+            any(target_arch = "x86_64", target_arch = "x86"),
             target_feature = "sse2",
             target_feature = "aes",
         ),
@@ -33,7 +33,7 @@ thread_local! {
 #[cfg(any(
     not(any(
         all(
-            target_arch = "x86_64",
+            any(target_arch = "x86_64", target_arch = "x86"),
             target_feature = "sse2",
             target_feature = "aes",
         ),

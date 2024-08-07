@@ -20,6 +20,10 @@ jobs:
             os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
 
+          - name: Linux x86
+            os: ubuntu-24.04
+            target: i686-unknown-linux-gnu
+
           - name: Linux riscv64gc
             os: ubuntu-24.04
             target: riscv64gc-unknown-linux-gnu
@@ -136,10 +140,12 @@ jobs:
           - name: aarch64
             arch: aarch64
             target: aarch64-unknown-linux-gnu
-            cpu: a64fx
           - name: riscv64
             arch: riscv64
             target: riscv64gc-unknown-linux-gnu
+          - name: x86
+            arch: i686
+            target: i686-unknown-linux-gnu
           - name: x86_64
             arch: x86-64
             target: x86_64-unknown-linux-gnu

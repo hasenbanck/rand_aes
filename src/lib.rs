@@ -23,6 +23,7 @@
 //! Use the following target features for optimal performance:
 //!
 //! - aarch64: `aes` (using the cryptographic extension)
+//! - x86: `sse2` and `aes` (using AES-NI)
 //! - x86_64: `aes` (using AES-NI)
 //!
 //! There is experimental support for the RISC-V vector crypto extension. Please read the README.md
@@ -73,7 +74,7 @@ mod traits;
 #[cfg(any(
     not(any(
         all(
-            target_arch = "x86_64",
+            any(target_arch = "x86_64", target_arch = "x86"),
             target_feature = "sse2",
             target_feature = "aes",
         ),
@@ -93,7 +94,7 @@ pub(crate) mod fallback;
     any(
         not(any(
             all(
-                target_arch = "x86_64",
+                any(target_arch = "x86_64", target_arch = "x86"),
                 target_feature = "sse2",
                 target_feature = "aes",
             ),
@@ -113,7 +114,7 @@ pub use fallback::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
 #[cfg(all(
     any(
         all(
-            target_arch = "x86_64",
+            any(target_arch = "x86_64", target_arch = "x86"),
             target_feature = "sse2",
             target_feature = "aes",
         ),
@@ -134,7 +135,7 @@ pub use hardware::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
         any(
             not(any(
                 all(
-                    target_arch = "x86_64",
+                    any(target_arch = "x86_64", target_arch = "x86"),
                     target_feature = "sse2",
                     target_feature = "aes",
                 ),
@@ -153,7 +154,7 @@ pub use hardware::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
                 any(
                     target_arch = "aarch64",
                     target_arch = "riscv64",
-                    target_arch = "x86_64",
+                    any(target_arch = "x86_64", target_arch = "x86"),
                 )
             )),
             feature = "force_no_runtime_detection"

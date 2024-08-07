@@ -67,7 +67,7 @@ accelerated versions for the following architectures:
 
 - aarch64: Support since Cortex-A53 (2012).
 - riscv64: Experimental using the vector crypto extension.
-- x86_64: Support since Intel's Westmere (2010) and AMD's Bulldozer (2011).
+- x86_64, x86: Support since Intel's Westmere (2010) and AMD's Bulldozer (2011).
 
 ## Experimental RISC-V support
 
@@ -103,6 +103,7 @@ Use the following target features for optimal performance:
 
 - aarch64: "aes" (using the cryptographic extension)
 - riscv64: "v" and "zvkn" (using the vector and vector crypto extension)
+- x86: "sse2" and "aes" (using AES-NI)
 - x86_64: "aes" (using AES-NI)
 
 Example in `.cargo/config.toml`:
@@ -113,6 +114,9 @@ rustflags = ["-C", "target-feature=+aes"]
 
 [target.'cfg(target_arch="riscv64")']
 rustflags = ["-C", "target-feature=+v,+zvkn"]
+
+[target.'cfg(target_arch="x86")']
+rustflags = ["-C", "target-feature=+sse2,+aes"]
 
 [target.'cfg(target_arch="x86_64")']
 rustflags = ["-C", "target-feature=+aes"]
