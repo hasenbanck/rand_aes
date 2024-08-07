@@ -118,7 +118,7 @@ impl Aes128Ctr64 {
             "vse32.v v0, (t0)", // Store the state
             options(nostack),
             in("t0") state_ptr,
-            inlateout("t1") round_keys_ptr,
+            inout("t1") round_keys_ptr,
             out("v0") _,
             out("v1") _,
             out("v2") _,
@@ -256,7 +256,7 @@ impl Aes128Ctr128 {
             "vse32.v v0, (t0)", // Store the state
             options(nostack),
             in("t0") state_ptr,
-            inlateout("t1") round_keys_ptr,
+            inout("t1") round_keys_ptr,
             out("v0") _,
             out("v1") _,
             out("v2") _,
@@ -402,7 +402,7 @@ impl Aes256Ctr64 {
             "vse32.v v0, (t0)", // Store the state
             options(nostack),
             in("t0") state_ptr,
-            inlateout("t1") round_keys_ptr,
+            inout("t1") round_keys_ptr,
             out("v0") _,
             out("v1") _,
             out("v2") _,
@@ -562,7 +562,7 @@ impl Aes256Ctr128 {
             "vse32.v v0, (t0)", // Store the state
             options(nostack),
             in("t0") state_ptr,
-            inlateout("t1") round_keys_ptr,
+            inout("t1") round_keys_ptr,
             out("v0") _,
             out("v1") _,
             out("v2") _,
@@ -626,7 +626,7 @@ unsafe fn aes128_key_expansion(key: u128) -> [u128; AES128_KEY_COUNT] {
         "add t1, t1, 16",
         "vse32.v v0, (t1)",
         in("t0") key_ptr,
-        inlateout("t1") expanded_ptr,
+        inout("t1") expanded_ptr,
         options(nostack),
         out("v0") _,
     );
@@ -686,8 +686,8 @@ unsafe fn aes256_key_expansion(key: [u128; 2]) -> [u128; AES256_KEY_COUNT] {
         "vaeskf2.vi v0, v4, 14", // Round 14
         "add t1, t1, 16",
         "vse32.v v0, (t1)",
-        inlateout("t0") key_ptr,
-        inlateout("t1") expanded_ptr,
+        inout("t0") key_ptr,
+        inout("t1") expanded_ptr,
         options(nostack),
         out("v0") _,
         out("v4") _,
