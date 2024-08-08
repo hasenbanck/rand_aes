@@ -1,4 +1,4 @@
-use core::{arch::asm, cell::Cell};
+use core::{arch::asm, cell::{Cell, RefCell}};
 
 use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES256_KEY_COUNT, AES256_KEY_SIZE};
 
@@ -9,13 +9,13 @@ use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES256_KEY_COUNT, AES2
 #[derive(Clone)]
 pub struct Aes128Ctr64 {
     counter: Cell<[u64; 2]>,
-    round_keys: Cell<[u128; AES128_KEY_COUNT]>,
+    round_keys: RefCell<[u128; AES128_KEY_COUNT]>,
 }
 
 impl Drop for Aes128Ctr64 {
     fn drop(&mut self) {
         self.counter.set([0, 0]);
-        self.round_keys.set([0; AES128_KEY_COUNT]);
+        *self.round_keys.borrow_mut() = [0; AES128_KEY_COUNT];
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -25,7 +25,7 @@ impl Aes128Ctr64 {
     pub(crate) const fn zeroed() -> Self {
         Self {
             counter: Cell::new([0; 2]),
-            round_keys: Cell::new([0; AES128_KEY_COUNT]),
+            round_keys: RefCell::new([0; AES128_KEY_COUNT]),
         }
     }
 
@@ -40,7 +40,7 @@ impl Aes128Ctr64 {
 
         Self {
             counter: Cell::new(counter),
-            round_keys: Cell::new(round_keys),
+            round_keys: RefCell::new(round_keys),
         }
     }
 
@@ -54,7 +54,7 @@ impl Aes128Ctr64 {
         let round_keys = aes128_key_expansion(key);
 
         self.counter.set(counter);
-        self.round_keys.set(round_keys)
+        *self.round_keys.borrow_mut() = round_keys;
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -72,9 +72,12 @@ impl Aes128Ctr64 {
         let mut new_counter = counter;
         new_counter[0] = counter[0].wrapping_add(1);
         self.counter.set(new_counter);
-
-        let round_keys = self.round_keys.get();
-        let mut round_keys_ptr = (&round_keys).as_ptr();
+        
+        // We know that there can't be any other reference to its data, and it will also not
+        // store a reference to it somewhere. So it's safe for the ASM to read from it directly.
+        // Once there are intrinsic, we can again use the cell type, since then the compiler is 
+        // able to optimize the access to it.
+        let mut round_keys_ptr = self.round_keys.as_ptr();
 
         // Initialize the state with the counter.
         let mut state = counter;
@@ -145,13 +148,13 @@ impl Aes128Ctr64 {
 #[derive(Clone)]
 pub struct Aes128Ctr128 {
     counter: Cell<u128>,
-    round_keys: Cell<[u128; AES128_KEY_COUNT]>,
+    round_keys: RefCell<[u128; AES128_KEY_COUNT]>,
 }
 
 impl Drop for Aes128Ctr128 {
     fn drop(&mut self) {
         self.counter.set(0);
-        self.round_keys.set([0; AES128_KEY_COUNT]);
+        *self.round_keys.borrow_mut() = [0; AES128_KEY_COUNT];
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -180,7 +183,7 @@ impl Aes128Ctr128 {
 
         Self {
             counter: Cell::new(counter),
-            round_keys: Cell::new(round_keys),
+            round_keys: RefCell::new(round_keys),
         }
     }
 
@@ -194,7 +197,7 @@ impl Aes128Ctr128 {
         let round_keys = aes128_key_expansion(key);
 
         self.counter.set(counter);
-        self.round_keys.set(round_keys)
+        *self.round_keys.borrow_mut() = round_keys;
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -211,8 +214,11 @@ impl Aes128Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        let round_keys = self.round_keys.get();
-        let mut round_keys_ptr = (&round_keys).as_ptr();
+        // We know that there can't be any other reference to its data, and it will also not
+        // store a reference to it somewhere. So it's safe for the ASM to read from it directly.
+        // Once there are intrinsic, we can again use the cell type, since then the compiler is 
+        // able to optimize the access to it.
+        let mut round_keys_ptr = self.round_keys.as_ptr();
 
         // Initialize the state with the counter.
         let mut state = counter;
@@ -283,13 +289,13 @@ impl Aes128Ctr128 {
 #[derive(Clone)]
 pub struct Aes256Ctr64 {
     counter: Cell<[u64; 2]>,
-    round_keys: Cell<[u128; AES256_KEY_COUNT]>,
+    round_keys: RefCell<[u128; AES256_KEY_COUNT]>,
 }
 
 impl Drop for Aes256Ctr64 {
     fn drop(&mut self) {
         self.counter.set([0, 0]);
-        self.round_keys.set([0; AES256_KEY_COUNT]);
+        *self.round_keys.borrow_mut() = [0; AES256_KEY_COUNT];
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -309,7 +315,7 @@ impl Aes256Ctr64 {
 
         Self {
             counter: Cell::new(counter),
-            round_keys: Cell::new(round_keys),
+            round_keys: RefCell::new(round_keys),
         }
     }
 
@@ -326,7 +332,7 @@ impl Aes256Ctr64 {
         let round_keys = aes256_key_expansion(key);
 
         self.counter.set(counter);
-        self.round_keys.set(round_keys)
+        *self.round_keys.borrow_mut() = round_keys;
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -345,8 +351,11 @@ impl Aes256Ctr64 {
         new_counter[0] = counter[0].wrapping_add(1);
         self.counter.set(new_counter);
 
-        let round_keys = self.round_keys.get();
-        let mut round_keys_ptr = (&round_keys).as_ptr();
+        // We know that there can't be any other reference to its data, and it will also not
+        // store a reference to it somewhere. So it's safe for the ASM to read from it directly.
+        // Once there are intrinsic, we can again use the cell type, since then the compiler is 
+        // able to optimize the access to it.
+        let mut round_keys_ptr = self.round_keys.as_ptr();
 
         // Initialize the state with the counter.
         let mut state = counter;
@@ -433,13 +442,13 @@ impl Aes256Ctr64 {
 #[derive(Clone)]
 pub struct Aes256Ctr128 {
     counter: Cell<u128>,
-    round_keys: Cell<[u128; AES256_KEY_COUNT]>,
+    round_keys: RefCell<[u128; AES256_KEY_COUNT]>,
 }
 
 impl Drop for Aes256Ctr128 {
     fn drop(&mut self) {
         self.counter.set(0);
-        self.round_keys.set([0; AES256_KEY_COUNT]);
+        *self.round_keys.borrow_mut() = [0; AES256_KEY_COUNT];
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -471,7 +480,7 @@ impl Aes256Ctr128 {
 
         Self {
             counter: Cell::new(counter),
-            round_keys: Cell::new(round_keys),
+            round_keys: RefCell::new(round_keys),
         }
     }
 
@@ -492,7 +501,7 @@ impl Aes256Ctr128 {
         let round_keys = aes256_key_expansion(key);
 
         self.counter.set(counter);
-        self.round_keys.set(round_keys)
+        *self.round_keys.borrow_mut() = round_keys;
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -505,8 +514,11 @@ impl Aes256Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        let round_keys = self.round_keys.get();
-        let mut round_keys_ptr = (&round_keys).as_ptr();
+        // We know that there can't be any other reference to its data, and it will also not
+        // store a reference to it somewhere. So it's safe for the ASM to read from it directly.
+        // Once there are intrinsic, we can again use the cell type, since then the compiler is 
+        // able to optimize the access to it.
+        let mut round_keys_ptr = self.round_keys.as_ptr();
 
         // Initialize the state with the counter.
         let mut state = counter;
