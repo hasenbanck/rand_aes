@@ -20,7 +20,10 @@
 //! provide also better inner mutability this way (since we want to optimize the fast path, when
 //! hardware based AES is found).
 //!
+
 use crate::constants::{AES128_KEY_SIZE, AES256_KEY_SIZE, AES_BLOCK_SIZE};
+
+use core::cell::RefCell;
 
 const BLOCK_COUNT: usize = 4;
 const FIX_SLICE_128_KEYS_SIZE: usize = 88;
@@ -42,7 +45,10 @@ type FixsliceKeys256 = [u64; FIX_SLICE_256_KEYS_SIZE];
 type State = [u64; 8];
 
 #[derive(Clone)]
-pub struct Aes128Ctr64 {
+pub struct Aes128Ctr64(RefCell<Aes128Ctr64Inner>);
+
+#[derive(Clone)]
+struct Aes128Ctr64Inner {
     counter: [u64; 2],
     round_keys: FixsliceKeys128,
     batch_blocks: BatchBlocks,
@@ -51,10 +57,11 @@ pub struct Aes128Ctr64 {
 
 impl Drop for Aes128Ctr64 {
     fn drop(&mut self) {
-        self.counter = [0, 0];
-        self.round_keys = [0; FIX_SLICE_128_KEYS_SIZE];
-        self.batch_blocks = [Block::default(); BLOCK_COUNT];
-        self.batch_num = 0;
+        let mut inner = self.0.borrow_mut();
+        inner.counter = [0, 0];
+        inner.round_keys = [0; FIX_SLICE_128_KEYS_SIZE];
+        inner.batch_blocks = [Block::default(); BLOCK_COUNT];
+        inner.batch_num = 0;
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -62,29 +69,30 @@ impl Drop for Aes128Ctr64 {
 impl Aes128Ctr64 {
     #[cfg(feature = "tls")]
     pub(crate) const fn zeroed() -> Self {
-        Self {
+        Self(RefCell::new(Aes128Ctr64Inner {
             counter: [0; 2],
             round_keys: [0; FIX_SLICE_128_KEYS_SIZE],
             batch_blocks: [[0; AES_BLOCK_SIZE]; BLOCK_COUNT],
             batch_num: BLOCK_COUNT,
-        }
+        }))
     }
 
     pub(crate) fn from_seed_impl(key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) -> Self {
         let counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
         let round_keys: FixsliceKeys128 = aes128_key_expansion(key);
 
-        Self {
+        Self(RefCell::new(Aes128Ctr64Inner {
             counter,
             round_keys,
             batch_blocks: [Block::default(); BLOCK_COUNT],
             batch_num: BLOCK_COUNT,
-        }
+        }))
     }
 
-    pub(crate) fn seed_impl(&mut self, key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) {
-        self.counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
-        self.round_keys = aes128_key_expansion(key);
+    pub(crate) fn seed_impl(&self, key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) {
+        let mut inner = self.0.borrow_mut();
+        inner.counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
+        inner.round_keys = aes128_key_expansion(key);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -92,46 +100,52 @@ impl Aes128Ctr64 {
     }
 
     pub(crate) fn counter_impl(&self) -> u64 {
-        self.counter[0]
+        let inner = self.0.borrow();
+        inner.counter[0]
     }
 
     #[inline(never)]
-    pub(crate) fn next_impl(&mut self) -> u128 {
+    pub(crate) fn next_impl(&self) -> u128 {
+        let mut inner = self.0.borrow_mut();
+
         // We have blocks left that we can return.
-        if self.batch_num < BLOCK_COUNT {
-            let block = self.batch_blocks[self.batch_num];
-            self.batch_num = self.batch_num.wrapping_add(1);
+        if inner.batch_num < BLOCK_COUNT {
+            let block = inner.batch_blocks[inner.batch_num];
+            inner.batch_num = inner.batch_num.wrapping_add(1);
             return u128::from_le_bytes(block);
         }
 
         // Fill all blocks with the correct data.
-        let counter_0 = self.counter[0];
-        let counter_1 = self.counter[0].wrapping_add(1);
-        let counter_2 = self.counter[0].wrapping_add(2);
-        let counter_3 = self.counter[0].wrapping_add(3);
-        let nonce = self.counter[1];
+        let counter_0 = inner.counter[0];
+        let counter_1 = inner.counter[0].wrapping_add(1);
+        let counter_2 = inner.counter[0].wrapping_add(2);
+        let counter_3 = inner.counter[0].wrapping_add(3);
+        let nonce = inner.counter[1];
 
-        self.counter[0] = self.counter[0].wrapping_add(4);
+        inner.counter[0] = inner.counter[0].wrapping_add(4);
 
-        self.batch_blocks[0][..8].copy_from_slice(&counter_0.to_le_bytes());
-        self.batch_blocks[0][8..].copy_from_slice(&nonce.to_le_bytes());
-        self.batch_blocks[1][..8].copy_from_slice(&counter_1.to_le_bytes());
-        self.batch_blocks[1][8..].copy_from_slice(&nonce.to_le_bytes());
-        self.batch_blocks[2][..8].copy_from_slice(&counter_2.to_le_bytes());
-        self.batch_blocks[2][8..].copy_from_slice(&nonce.to_le_bytes());
-        self.batch_blocks[3][..8].copy_from_slice(&counter_3.to_le_bytes());
-        self.batch_blocks[3][8..].copy_from_slice(&nonce.to_le_bytes());
+        inner.batch_blocks[0][..8].copy_from_slice(&counter_0.to_le_bytes());
+        inner.batch_blocks[0][8..].copy_from_slice(&nonce.to_le_bytes());
+        inner.batch_blocks[1][..8].copy_from_slice(&counter_1.to_le_bytes());
+        inner.batch_blocks[1][8..].copy_from_slice(&nonce.to_le_bytes());
+        inner.batch_blocks[2][..8].copy_from_slice(&counter_2.to_le_bytes());
+        inner.batch_blocks[2][8..].copy_from_slice(&nonce.to_le_bytes());
+        inner.batch_blocks[3][..8].copy_from_slice(&counter_3.to_le_bytes());
+        inner.batch_blocks[3][8..].copy_from_slice(&nonce.to_le_bytes());
 
-        self.batch_blocks = aes128_encrypt(&self.round_keys, &self.batch_blocks);
+        inner.batch_blocks = aes128_encrypt(&inner.round_keys, &inner.batch_blocks);
 
         // Return the first encrypted counter as u128
-        self.batch_num = 1;
-        u128::from_le_bytes(self.batch_blocks[0])
+        inner.batch_num = 1;
+        u128::from_le_bytes(inner.batch_blocks[0])
     }
 }
 
 #[derive(Clone)]
-pub struct Aes128Ctr128 {
+pub struct Aes128Ctr128(RefCell<Aes128Ctr128Inner>);
+
+#[derive(Clone)]
+struct Aes128Ctr128Inner {
     counter: u128,
     round_keys: FixsliceKeys128,
     batch_blocks: BatchBlocks,
@@ -140,24 +154,27 @@ pub struct Aes128Ctr128 {
 
 impl Drop for Aes128Ctr128 {
     fn drop(&mut self) {
-        self.counter = 0;
-        self.round_keys = [0; FIX_SLICE_128_KEYS_SIZE];
-        self.batch_blocks = [Block::default(); BLOCK_COUNT];
-        self.batch_num = 0;
+        let mut inner = self.0.borrow_mut();
+        inner.counter = 0;
+        inner.round_keys = [0; FIX_SLICE_128_KEYS_SIZE];
+        inner.batch_blocks = [Block::default(); BLOCK_COUNT];
+        inner.batch_num = 0;
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
 
 impl Aes128Ctr128 {
-    pub(crate) fn jump_impl(&mut self) -> Self {
+    pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
-        self.counter += 1 << 64;
+        let mut inner = self.0.borrow_mut();
+        inner.counter += 1 << 64;
         clone
     }
 
-    pub(crate) fn long_jump_impl(&mut self) -> Self {
+    pub(crate) fn long_jump_impl(&self) -> Self {
         let clone = self.clone();
-        self.counter += 1 << 96;
+        let mut inner = self.0.borrow_mut();
+        inner.counter += 1 << 96;
         clone
     }
 
@@ -165,17 +182,18 @@ impl Aes128Ctr128 {
         let counter = u128::from_le_bytes(counter);
         let round_keys: FixsliceKeys128 = aes128_key_expansion(key);
 
-        Self {
+        Self(RefCell::new(Aes128Ctr128Inner {
             counter,
             round_keys,
             batch_blocks: [Block::default(); BLOCK_COUNT],
             batch_num: BLOCK_COUNT,
-        }
+        }))
     }
 
-    pub(crate) fn seed_impl(&mut self, key: [u8; 16], counter: [u8; 16]) {
-        self.counter = u128::from_le_bytes(counter);
-        self.round_keys = aes128_key_expansion(key);
+    pub(crate) fn seed_impl(&self, key: [u8; 16], counter: [u8; 16]) {
+        let mut inner = self.0.borrow_mut();
+        inner.counter = u128::from_le_bytes(counter);
+        inner.round_keys = aes128_key_expansion(key);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -183,41 +201,47 @@ impl Aes128Ctr128 {
     }
 
     pub(crate) fn counter_impl(&self) -> u128 {
-        self.counter
+        let inner = self.0.borrow();
+        inner.counter
     }
 
     #[inline(never)]
-    pub(crate) fn next_impl(&mut self) -> u128 {
+    pub(crate) fn next_impl(&self) -> u128 {
+        let mut inner = self.0.borrow_mut();
+
         // We have blocks left that we can return.
-        if self.batch_num < BLOCK_COUNT {
-            let block = self.batch_blocks[self.batch_num];
-            self.batch_num = self.batch_num.wrapping_add(1);
+        if inner.batch_num < BLOCK_COUNT {
+            let block = inner.batch_blocks[inner.batch_num];
+            inner.batch_num = inner.batch_num.wrapping_add(1);
             return u128::from_le_bytes(block);
         }
 
         // Fill all blocks with the correct data.
-        let counter_0 = self.counter;
-        let counter_1 = self.counter.wrapping_add(1);
-        let counter_2 = self.counter.wrapping_add(2);
-        let counter_3 = self.counter.wrapping_add(3);
+        let counter_0 = inner.counter;
+        let counter_1 = inner.counter.wrapping_add(1);
+        let counter_2 = inner.counter.wrapping_add(2);
+        let counter_3 = inner.counter.wrapping_add(3);
 
-        self.counter = self.counter.wrapping_add(4);
+        inner.counter = inner.counter.wrapping_add(4);
 
-        self.batch_blocks[0].copy_from_slice(&counter_0.to_le_bytes());
-        self.batch_blocks[1].copy_from_slice(&counter_1.to_le_bytes());
-        self.batch_blocks[2].copy_from_slice(&counter_2.to_le_bytes());
-        self.batch_blocks[3].copy_from_slice(&counter_3.to_le_bytes());
+        inner.batch_blocks[0].copy_from_slice(&counter_0.to_le_bytes());
+        inner.batch_blocks[1].copy_from_slice(&counter_1.to_le_bytes());
+        inner.batch_blocks[2].copy_from_slice(&counter_2.to_le_bytes());
+        inner.batch_blocks[3].copy_from_slice(&counter_3.to_le_bytes());
 
-        self.batch_blocks = aes128_encrypt(&self.round_keys, &self.batch_blocks);
+        inner.batch_blocks = aes128_encrypt(&inner.round_keys, &inner.batch_blocks);
 
         // Return the first encrypted counter as u128
-        self.batch_num = 1;
-        u128::from_le_bytes(self.batch_blocks[0])
+        inner.batch_num = 1;
+        u128::from_le_bytes(inner.batch_blocks[0])
     }
 }
 
 #[derive(Clone)]
-pub struct Aes256Ctr64 {
+pub struct Aes256Ctr64(RefCell<Aes256Ctr64Inner>);
+
+#[derive(Clone)]
+struct Aes256Ctr64Inner {
     counter: [u64; 2],
     round_keys: FixsliceKeys256,
     batch_blocks: BatchBlocks,
@@ -226,10 +250,11 @@ pub struct Aes256Ctr64 {
 
 impl Drop for Aes256Ctr64 {
     fn drop(&mut self) {
-        self.counter = [0, 0];
-        self.round_keys = [0; FIX_SLICE_256_KEYS_SIZE];
-        self.batch_blocks = [Block::default(); BLOCK_COUNT];
-        self.batch_num = 0;
+        let mut inner = self.0.borrow_mut();
+        inner.counter = [0, 0];
+        inner.round_keys = [0; FIX_SLICE_256_KEYS_SIZE];
+        inner.batch_blocks = [Block::default(); BLOCK_COUNT];
+        inner.batch_num = 0;
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -239,17 +264,18 @@ impl Aes256Ctr64 {
         let counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
         let round_keys: FixsliceKeys256 = aes256_key_expansion(key);
 
-        Self {
+        Self(RefCell::new(Aes256Ctr64Inner {
             counter,
             round_keys,
             batch_blocks: [Block::default(); BLOCK_COUNT],
             batch_num: BLOCK_COUNT,
-        }
+        }))
     }
 
-    pub(crate) fn seed_impl(&mut self, key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) {
-        self.counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
-        self.round_keys = aes256_key_expansion(key);
+    pub(crate) fn seed_impl(&self, key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) {
+        let mut inner = self.0.borrow_mut();
+        inner.counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
+        inner.round_keys = aes256_key_expansion(key);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -257,45 +283,51 @@ impl Aes256Ctr64 {
     }
 
     pub(crate) fn counter_impl(&self) -> u64 {
-        self.counter[0]
+        let inner = self.0.borrow();
+        inner.counter[0]
     }
 
-    pub(crate) fn next_impl(&mut self) -> u128 {
+    pub(crate) fn next_impl(&self) -> u128 {
+        let mut inner = self.0.borrow_mut();
+
         // We have blocks left that we can return.
-        if self.batch_num < BLOCK_COUNT {
-            let block = self.batch_blocks[self.batch_num];
-            self.batch_num = self.batch_num.wrapping_add(1);
+        if inner.batch_num < BLOCK_COUNT {
+            let block = inner.batch_blocks[inner.batch_num];
+            inner.batch_num = inner.batch_num.wrapping_add(1);
             return u128::from_le_bytes(block);
         }
 
         // Fill all blocks with the correct data.
-        let counter_0 = self.counter[0];
-        let counter_1 = self.counter[0].wrapping_add(1);
-        let counter_2 = self.counter[0].wrapping_add(2);
-        let counter_3 = self.counter[0].wrapping_add(3);
-        let nonce = self.counter[1];
+        let counter_0 = inner.counter[0];
+        let counter_1 = inner.counter[0].wrapping_add(1);
+        let counter_2 = inner.counter[0].wrapping_add(2);
+        let counter_3 = inner.counter[0].wrapping_add(3);
+        let nonce = inner.counter[1];
 
-        self.counter[0] = self.counter[0].wrapping_add(4);
+        inner.counter[0] = inner.counter[0].wrapping_add(4);
 
-        self.batch_blocks[0][..8].copy_from_slice(&counter_0.to_le_bytes());
-        self.batch_blocks[0][8..].copy_from_slice(&nonce.to_le_bytes());
-        self.batch_blocks[1][..8].copy_from_slice(&counter_1.to_le_bytes());
-        self.batch_blocks[1][8..].copy_from_slice(&nonce.to_le_bytes());
-        self.batch_blocks[2][..8].copy_from_slice(&counter_2.to_le_bytes());
-        self.batch_blocks[2][8..].copy_from_slice(&nonce.to_le_bytes());
-        self.batch_blocks[3][..8].copy_from_slice(&counter_3.to_le_bytes());
-        self.batch_blocks[3][8..].copy_from_slice(&nonce.to_le_bytes());
+        inner.batch_blocks[0][..8].copy_from_slice(&counter_0.to_le_bytes());
+        inner.batch_blocks[0][8..].copy_from_slice(&nonce.to_le_bytes());
+        inner.batch_blocks[1][..8].copy_from_slice(&counter_1.to_le_bytes());
+        inner.batch_blocks[1][8..].copy_from_slice(&nonce.to_le_bytes());
+        inner.batch_blocks[2][..8].copy_from_slice(&counter_2.to_le_bytes());
+        inner.batch_blocks[2][8..].copy_from_slice(&nonce.to_le_bytes());
+        inner.batch_blocks[3][..8].copy_from_slice(&counter_3.to_le_bytes());
+        inner.batch_blocks[3][8..].copy_from_slice(&nonce.to_le_bytes());
 
-        self.batch_blocks = aes256_encrypt(&self.round_keys, &self.batch_blocks);
+        inner.batch_blocks = aes256_encrypt(&inner.round_keys, &inner.batch_blocks);
 
         // Return the first encrypted counter as u128
-        self.batch_num = 1;
-        u128::from_le_bytes(self.batch_blocks[0])
+        inner.batch_num = 1;
+        u128::from_le_bytes(inner.batch_blocks[0])
     }
 }
 
 #[derive(Clone)]
-pub struct Aes256Ctr128 {
+pub struct Aes256Ctr128(RefCell<Aes256Ctr128Inner>);
+
+#[derive(Clone)]
+struct Aes256Ctr128Inner {
     pub(crate) counter: u128,
     round_keys: FixsliceKeys256,
     batch_blocks: BatchBlocks,
@@ -304,24 +336,27 @@ pub struct Aes256Ctr128 {
 
 impl Drop for Aes256Ctr128 {
     fn drop(&mut self) {
-        self.counter = 0;
-        self.round_keys = [0; FIX_SLICE_256_KEYS_SIZE];
-        self.batch_blocks = [Block::default(); BLOCK_COUNT];
-        self.batch_num = 0;
+        let mut inner = self.0.borrow_mut();
+        inner.counter = 0;
+        inner.round_keys = [0; FIX_SLICE_256_KEYS_SIZE];
+        inner.batch_blocks = [Block::default(); BLOCK_COUNT];
+        inner.batch_num = 0;
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
 
 impl Aes256Ctr128 {
-    pub(crate) fn jump_impl(&mut self) -> Self {
+    pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
-        self.counter += 1 << 64;
+        let mut inner = self.0.borrow_mut();
+        inner.counter += 1 << 64;
         clone
     }
 
-    pub(crate) fn long_jump_impl(&mut self) -> Self {
+    pub(crate) fn long_jump_impl(&self) -> Self {
         let clone = self.clone();
-        self.counter += 1 << 96;
+        let mut inner = self.0.borrow_mut();
+        inner.counter += 1 << 96;
         clone
     }
 
@@ -329,17 +364,18 @@ impl Aes256Ctr128 {
         let counter = u128::from_le_bytes(counter);
         let round_keys: FixsliceKeys256 = aes256_key_expansion(key);
 
-        Self {
+        Self(RefCell::new(Aes256Ctr128Inner {
             counter,
             round_keys,
             batch_blocks: [Block::default(); BLOCK_COUNT],
             batch_num: BLOCK_COUNT,
-        }
+        }))
     }
 
-    pub(crate) fn seed_impl(&mut self, key: [u8; 32], counter: [u8; 16]) {
-        self.counter = u128::from_le_bytes(counter);
-        self.round_keys = aes256_key_expansion(key);
+    pub(crate) fn seed_impl(&self, key: [u8; 32], counter: [u8; 16]) {
+        let mut inner = self.0.borrow_mut();
+        inner.counter = u128::from_le_bytes(counter);
+        inner.round_keys = aes256_key_expansion(key);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -347,36 +383,39 @@ impl Aes256Ctr128 {
     }
 
     pub(crate) fn counter_impl(&self) -> u128 {
-        self.counter
+        let inner = self.0.borrow();
+        inner.counter
     }
 
     #[inline(never)]
-    pub(crate) fn next_impl(&mut self) -> u128 {
+    pub(crate) fn next_impl(&self) -> u128 {
+        let mut inner = self.0.borrow_mut();
+
         // We have blocks left that we can return.
-        if self.batch_num < BLOCK_COUNT {
-            let block = self.batch_blocks[self.batch_num];
-            self.batch_num = self.batch_num.wrapping_add(1);
+        if inner.batch_num < BLOCK_COUNT {
+            let block = inner.batch_blocks[inner.batch_num];
+            inner.batch_num = inner.batch_num.wrapping_add(1);
             return u128::from_le_bytes(block);
         }
 
         // Fill all blocks with the correct data.
-        let counter_0 = self.counter;
-        let counter_1 = self.counter.wrapping_add(1);
-        let counter_2 = self.counter.wrapping_add(2);
-        let counter_3 = self.counter.wrapping_add(3);
+        let counter_0 = inner.counter;
+        let counter_1 = inner.counter.wrapping_add(1);
+        let counter_2 = inner.counter.wrapping_add(2);
+        let counter_3 = inner.counter.wrapping_add(3);
 
-        self.counter = self.counter.wrapping_add(4);
+        inner.counter = inner.counter.wrapping_add(4);
 
-        self.batch_blocks[0].copy_from_slice(&counter_0.to_le_bytes());
-        self.batch_blocks[1].copy_from_slice(&counter_1.to_le_bytes());
-        self.batch_blocks[2].copy_from_slice(&counter_2.to_le_bytes());
-        self.batch_blocks[3].copy_from_slice(&counter_3.to_le_bytes());
+        inner.batch_blocks[0].copy_from_slice(&counter_0.to_le_bytes());
+        inner.batch_blocks[1].copy_from_slice(&counter_1.to_le_bytes());
+        inner.batch_blocks[2].copy_from_slice(&counter_2.to_le_bytes());
+        inner.batch_blocks[3].copy_from_slice(&counter_3.to_le_bytes());
 
-        self.batch_blocks = aes256_encrypt(&self.round_keys, &self.batch_blocks);
+        inner.batch_blocks = aes256_encrypt(&inner.round_keys, &inner.batch_blocks);
 
         // Return the first encrypted counter as u128
-        self.batch_num = 1;
-        u128::from_le_bytes(self.batch_blocks[0])
+        inner.batch_num = 1;
+        u128::from_le_bytes(inner.batch_blocks[0])
     }
 }
 
@@ -1102,118 +1141,4 @@ fn rotate_rows_and_columns_2_2(x: u64) -> u64 {
     const DISTANCE_0: u32 = ror_distance(2, 2);
     const DISTANCE_1: u32 = ror_distance(1, 2);
     (ror(x, DISTANCE_0) & 0x00FF00FF00FF00FF) | (ror(x, DISTANCE_1) & 0xFF00FF00FF00FF00)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::constants::{AES128_KEY_SIZE, AES256_KEY_SIZE, AES_BLOCK_SIZE};
-
-    #[test]
-    fn test_aes128_64_ctr() {
-        let key: [u8; AES128_KEY_SIZE] = [
-            0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF,
-            0x4F, 0x3C,
-        ];
-        let nonce: [u8; 8] = [0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7];
-
-        let nonce = u64::from_le_bytes(nonce);
-        let round_keys = aes128_key_expansion(key);
-
-        let mut prng = Aes128Ctr64 {
-            counter: [0, nonce],
-            round_keys,
-            batch_blocks: [[0; AES_BLOCK_SIZE]; BLOCK_COUNT],
-            batch_num: BLOCK_COUNT,
-        };
-
-        let expected1: u128 = 318787209764863539074968061615330655656;
-        let expected2: u128 = 326852671706151165476845928255574082697;
-
-        assert_eq!(prng.next_impl().to_le_bytes(), expected1.to_le_bytes());
-        assert_eq!(prng.next_impl().to_le_bytes(), expected2.to_le_bytes());
-    }
-
-    #[test]
-    fn test_aes128_128_ctr() {
-        let key: [u8; AES128_KEY_SIZE] = [
-            0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF,
-            0x4F, 0x3C,
-        ];
-        let nonce: [u8; 16] = [
-            0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD,
-            0xFE, 0xFF,
-        ];
-
-        let counter = u128::from_le_bytes(nonce);
-        let round_keys = aes128_key_expansion(key);
-
-        let mut prng = Aes128Ctr128 {
-            counter,
-            round_keys,
-            batch_blocks: [[0; AES_BLOCK_SIZE]; BLOCK_COUNT],
-            batch_num: BLOCK_COUNT,
-        };
-
-        let expected1: u128 = 303903166029529670262962909209442618604;
-        let expected2: u128 = 7273797019947380857539426679138531822;
-
-        assert_eq!(prng.next_impl().to_le_bytes(), expected1.to_le_bytes());
-        assert_eq!(prng.next_impl().to_le_bytes(), expected2.to_le_bytes());
-    }
-
-    #[test]
-    fn test_aes256_64_ctr() {
-        let key: [u8; AES256_KEY_SIZE] = [
-            0x60, 0x3D, 0xEB, 0x10, 0x15, 0xCA, 0x71, 0xBE, 0x2B, 0x73, 0xAE, 0xF0, 0x85, 0x7D,
-            0x77, 0x81, 0x1F, 0x35, 0x2C, 0x07, 0x3B, 0x61, 0x08, 0xD7, 0x2D, 0x98, 0x10, 0xA3,
-            0x09, 0x14, 0xDF, 0xF4,
-        ];
-        let nonce: [u8; 8] = [0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7];
-
-        let nonce = u64::from_le_bytes(nonce);
-        let round_keys = aes256_key_expansion(key);
-
-        let mut prng = Aes256Ctr64 {
-            counter: [0, nonce],
-            round_keys,
-            batch_blocks: [[0; AES_BLOCK_SIZE]; BLOCK_COUNT],
-            batch_num: BLOCK_COUNT,
-        };
-
-        let expected1: u128 = 117682664062987963529076142802143365131;
-        let expected2: u128 = 269366866900604671011853374041972895696;
-
-        assert_eq!(prng.next_impl().to_le_bytes(), expected1.to_le_bytes());
-        assert_eq!(prng.next_impl().to_le_bytes(), expected2.to_le_bytes());
-    }
-
-    #[test]
-    fn test_aes256_128_ctr() {
-        let key: [u8; AES256_KEY_SIZE] = [
-            0x60, 0x3D, 0xEB, 0x10, 0x15, 0xCA, 0x71, 0xBE, 0x2B, 0x73, 0xAE, 0xF0, 0x85, 0x7D,
-            0x77, 0x81, 0x1F, 0x35, 0x2C, 0x07, 0x3B, 0x61, 0x08, 0xD7, 0x2D, 0x98, 0x10, 0xA3,
-            0x09, 0x14, 0xDF, 0xF4,
-        ];
-        let nonce: [u8; 16] = [
-            0xF0, 0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD,
-            0xFE, 0xFF,
-        ];
-
-        let counter = u128::from_le_bytes(nonce);
-        let round_keys = aes256_key_expansion(key);
-
-        let mut prng = Aes256Ctr128 {
-            counter,
-            round_keys,
-            batch_blocks: [[0; AES_BLOCK_SIZE]; BLOCK_COUNT],
-            batch_num: BLOCK_COUNT,
-        };
-
-        let expected1: u128 = 3683301436323601079144479715388940043;
-        let expected2: u128 = 176305260822880786646713066665859703433;
-
-        assert_eq!(prng.next_impl().to_le_bytes(), expected1.to_le_bytes());
-        assert_eq!(prng.next_impl().to_le_bytes(), expected2.to_le_bytes());
-    }
 }

@@ -19,7 +19,8 @@ macro_rules! safely_call {
                     target_feature = "aes",
                 ),
             )),
-            feature = "force_fallback"
+            feature = "force_runtime_detection",
+            feature = "force_software"
         )))]
         unsafe {
             $what
@@ -39,7 +40,8 @@ macro_rules! safely_call {
                     target_feature = "aes",
                 ),
             )),
-            feature = "force_fallback"
+            feature = "force_runtime_detection",
+            feature = "force_software"
         ))]
         $what
     };

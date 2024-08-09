@@ -19,18 +19,22 @@ jobs:
           - name: Linux x86_64
             os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
+            arguments: ""
 
           - name: Linux x86
             os: ubuntu-24.04
             target: i686-unknown-linux-gnu
+            arguments: ""
 
           - name: Linux riscv64gc
             os: ubuntu-24.04
             target: riscv64gc-unknown-linux-gnu
+            arguments: "--features=experimental_riscv"
 
           - name: MacOS aarch64
             os: macos-latest
             target: aarch64-apple-darwin
+            arguments: ""
 
     name: Clippy ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -59,7 +63,7 @@ jobs:
           cargo clippy --target ${{ matrix.target }} --no-default-features
 
           # Check with default features
-          cargo clippy --target ${{ matrix.target }}
+          cargo clippy --target ${{ matrix.target }} ${{ matrix.arguments }}
 
   test:
     timeout-minutes: 30
@@ -98,37 +102,31 @@ jobs:
         shell: bash
         run: |
           set -e
-          cargo test
+          cargo test --lib
 
-      - name: Tests (force_fallback)
+      - name: Tests (force_software)
         shell: bash
         run: |
           set -e
-          cargo test --features=force_fallback
+          cargo test --lib --features=force_software
 
-      - name: Tests (force_no_runtime_detection)
+      - name: Tests (force_runtime_detection)
         shell: bash
         run: |
           set -e
-          cargo test --features=force_fallback,force_no_runtime_detection
+          cargo test --lib --features=force_runtime_detection
 
       - name: Tests no-std
         shell: bash
         run: |
           set -e
-          cargo test --no-default-features
+          cargo test --lib --no-default-features
 
-      - name: Tests no-std (force_fallback)
+      - name: Tests no-std (force_software)
         shell: bash
         run: |
           set -e
-          cargo test --no-default-features --features=force_fallback
-
-      - name: Tests no-std (force_no_runtime_detection)
-        shell: bash
-        run: |
-          set -e
-          cargo test --no-default-features --features=force_fallback,force_no_runtime_detection
+          cargo test --lib --no-default-features --features=force_software
 
   verification:
     timeout-minutes: 30

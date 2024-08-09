@@ -1,9 +1,6 @@
-use core::{
-    arch::asm,
-    cell::{Cell, RefCell},
-};
+use core::{arch::asm, cell::Cell};
 
-use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES256_KEY_COUNT, AES256_KEY_SIZE};
+use crate::constants::{AES128_KEY_COUNT, AES256_KEY_COUNT};
 
 /// A random number generator based on the AES-128 block cipher that runs in CTR mode and has a
 /// period of 64-bit.
@@ -69,6 +66,7 @@ impl Aes128Ctr64 {
     }
 
     #[inline(always)]
+    #[allow(unused_assignments)]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         // Increment the lower 64 bits.
         let counter = self.counter.get();
@@ -80,7 +78,7 @@ impl Aes128Ctr64 {
 
         // Initialize the state with the counter.
         let mut state = counter;
-        let state_ptr = (&mut state).as_mut_ptr();
+        let state_ptr = state.as_mut_ptr();
 
         asm!(
             "vsetivli x0, 4, e32, m1, ta, ma",
@@ -208,6 +206,7 @@ impl Aes128Ctr128 {
     }
 
     #[inline(always)]
+    #[allow(unused_assignments)]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         // Increment the counter.
         let counter = self.counter.get();
@@ -339,6 +338,7 @@ impl Aes256Ctr64 {
     }
 
     #[inline(always)]
+    #[allow(unused_assignments)]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         // Increment the lower 64 bits.
         let counter = self.counter.get();
@@ -350,7 +350,7 @@ impl Aes256Ctr64 {
 
         // Initialize the state with the counter.
         let mut state = counter;
-        let state_ptr = (&mut state).as_mut_ptr();
+        let state_ptr = state.as_mut_ptr();
 
         asm!(
             "vsetivli x0, 4, e32, m1, ta, ma",
@@ -500,6 +500,7 @@ impl Aes256Ctr128 {
     }
 
     #[inline(always)]
+    #[allow(unused_assignments)]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         // Increment the counter.
         let counter = self.counter.get();
@@ -585,10 +586,11 @@ impl Aes256Ctr128 {
     }
 }
 
+#[allow(unused_assignments)]
 unsafe fn aes128_key_expansion(key: u128) -> [u128; AES128_KEY_COUNT] {
     let mut expanded_keys = [0u128; AES128_KEY_COUNT];
     let key_ptr = &key as *const u128;
-    let mut expanded_ptr = (&mut expanded_keys).as_mut_ptr();
+    let mut expanded_ptr = expanded_keys.as_mut_ptr();
 
     asm!(
         "vsetivli x0, 4, e32, m4, ta, ma",
@@ -633,10 +635,11 @@ unsafe fn aes128_key_expansion(key: u128) -> [u128; AES128_KEY_COUNT] {
     expanded_keys
 }
 
+#[allow(unused_assignments)]
 unsafe fn aes256_key_expansion(key: [u128; 2]) -> [u128; AES256_KEY_COUNT] {
     let mut expanded_keys = [0u128; AES256_KEY_COUNT];
     let mut key_ptr = &key as *const u128;
-    let mut expanded_ptr = (&mut expanded_keys).as_mut_ptr();
+    let mut expanded_ptr = expanded_keys.as_mut_ptr();
 
     asm!(
         "vsetivli x0, 4, e32, m4, ta, ma",
@@ -695,11 +698,16 @@ unsafe fn aes256_key_expansion(key: [u128; 2]) -> [u128; AES256_KEY_COUNT] {
     expanded_keys
 }
 
-#[cfg(all(test, not(feature = "force_fallback")))]
+#[cfg(all(
+    test,
+    target_arch = "riscv64",
+    feature = "experimental_riscv",
+    not(feature = "verification")
+))]
 mod tests {
     use super::*;
     use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES_BLOCK_SIZE};
-    use crate::hardware::tests::{aes128_key_expansion_test, aes256_key_expansion_test};
+    use crate::tests::{aes128_key_expansion_test, aes256_key_expansion_test};
 
     #[test]
     fn test_aes128_key_expansion() {
