@@ -1,15 +1,27 @@
-//! The runtime fallback, when STD is available or the platform has hardware based AES support.
-use core::cell::RefCell;
+//! The runtime fallback, when std is available or the platform has hardware based AES support.
 
-use crate::hardware::{
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+use crate::backend::x86::{
     Aes128Ctr128 as Aes128Ctr128Hardware, Aes128Ctr64 as Aes128Ctr64Hardware,
     Aes256Ctr128 as Aes256Ctr128Hardware, Aes256Ctr64 as Aes256Ctr64Hardware,
 };
 
-use crate::fallback::software::Aes128Ctr128 as Aes128Ctr128Software;
-use crate::fallback::software::Aes128Ctr64 as Aes128Ctr64Software;
-use crate::fallback::software::Aes256Ctr128 as Aes256Ctr128Software;
-use crate::fallback::software::Aes256Ctr64 as Aes256Ctr64Software;
+#[cfg(all(target_arch = "riscv64", feature = "experimental_riscv"))]
+use crate::backend::riscv64::{
+    Aes128Ctr128 as Aes128Ctr128Hardware, Aes128Ctr64 as Aes128Ctr64Hardware,
+    Aes256Ctr128 as Aes256Ctr128Hardware, Aes256Ctr64 as Aes256Ctr64Hardware,
+};
+
+#[cfg(target_arch = "aarch64")]
+use crate::backend::aarch64::{
+    Aes128Ctr128 as Aes128Ctr128Hardware, Aes128Ctr64 as Aes128Ctr64Hardware,
+    Aes256Ctr128 as Aes256Ctr128Hardware, Aes256Ctr64 as Aes256Ctr64Hardware,
+};
+
+use crate::backend::soft::{
+    Aes128Ctr128 as Aes128Ctr128Software, Aes128Ctr64 as Aes128Ctr64Software,
+    Aes256Ctr128 as Aes256Ctr128Software, Aes256Ctr64 as Aes256Ctr64Software,
+};
 
 #[allow(unused)]
 pub(crate) fn has_hardware_acceleration() -> bool {
@@ -30,7 +42,7 @@ pub(crate) fn has_hardware_acceleration() -> bool {
 #[derive(Clone)]
 enum Aes128Ctr64Inner {
     Hardware(Box<Aes128Ctr64Hardware>),
-    Software(Box<RefCell<Aes128Ctr64Software>>),
+    Software(Box<Aes128Ctr64Software>),
 }
 
 /// A random number generator based on the AES-128 block cipher that runs in CTR mode and has a
@@ -45,13 +57,12 @@ impl Aes128Ctr64 {
     pub(crate) fn zeroed() -> Self {
         match has_hardware_acceleration() {
             true => {
-                // Safety: We checked that the hardware acceleration is available.
                 let hardware = Aes128Ctr64Hardware::zeroed();
                 Self(Aes128Ctr64Inner::Hardware(Box::new(hardware)))
             }
             false => {
                 let software = Aes128Ctr64Software::zeroed();
-                Self(Aes128Ctr64Inner::Software(Box::new(RefCell::new(software))))
+                Self(Aes128Ctr64Inner::Software(Box::new(software)))
             }
         }
     }
@@ -65,7 +76,7 @@ impl Aes128Ctr64 {
             }
             false => {
                 let software = Aes128Ctr64Software::from_seed_impl(key, nonce, counter);
-                Self(Aes128Ctr64Inner::Software(Box::new(RefCell::new(software))))
+                Self(Aes128Ctr64Inner::Software(Box::new(software)))
             }
         }
     }
@@ -77,7 +88,7 @@ impl Aes128Ctr64 {
                 unsafe { this.seed_impl(key, nonce, counter) };
             }
             Aes128Ctr64Inner::Software(this) => {
-                this.borrow_mut().seed_impl(key, nonce, counter);
+                this.seed_impl(key, nonce, counter);
             }
         }
     }
@@ -85,14 +96,14 @@ impl Aes128Ctr64 {
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         match &self.0 {
             Aes128Ctr64Inner::Hardware(this) => this.is_hardware_accelerated_impl(),
-            Aes128Ctr64Inner::Software(this) => this.borrow().is_hardware_accelerated_impl(),
+            Aes128Ctr64Inner::Software(this) => this.is_hardware_accelerated_impl(),
         }
     }
 
     pub(crate) fn counter_impl(&self) -> u64 {
         match &self.0 {
             Aes128Ctr64Inner::Hardware(this) => this.counter_impl(),
-            Aes128Ctr64Inner::Software(this) => this.borrow().counter_impl(),
+            Aes128Ctr64Inner::Software(this) => this.counter_impl(),
         }
     }
 
@@ -103,7 +114,7 @@ impl Aes128Ctr64 {
                 // Safety: We checked that the hardware acceleration is available.
                 unsafe { this.next_impl() }
             }
-            Aes128Ctr64Inner::Software(this) => this.borrow_mut().next_impl(),
+            Aes128Ctr64Inner::Software(this) => this.next_impl(),
         }
     }
 }
@@ -111,7 +122,7 @@ impl Aes128Ctr64 {
 #[derive(Clone)]
 enum Aes128Ctr128Inner {
     Hardware(Box<Aes128Ctr128Hardware>),
-    Software(Box<RefCell<Aes128Ctr128Software>>),
+    Software(Box<Aes128Ctr128Software>),
 }
 
 /// A random number generator based on the AES-128 block cipher that runs in CTR mode and has a
@@ -128,7 +139,7 @@ impl Aes128Ctr128 {
                 Aes128Ctr128Inner::Hardware(Box::new(this.jump_impl()))
             }
             Aes128Ctr128Inner::Software(this) => {
-                Aes128Ctr128Inner::Software(Box::new(RefCell::new(this.borrow_mut().jump_impl())))
+                Aes128Ctr128Inner::Software(Box::new(this.jump_impl()))
             }
         };
         Self(inner)
@@ -139,9 +150,9 @@ impl Aes128Ctr128 {
             Aes128Ctr128Inner::Hardware(this) => {
                 Aes128Ctr128Inner::Hardware(Box::new(this.long_jump_impl()))
             }
-            Aes128Ctr128Inner::Software(this) => Aes128Ctr128Inner::Software(Box::new(
-                RefCell::new(this.borrow_mut().long_jump_impl()),
-            )),
+            Aes128Ctr128Inner::Software(this) => {
+                Aes128Ctr128Inner::Software(Box::new(this.long_jump_impl()))
+            }
         };
         Self(inner)
     }
@@ -155,9 +166,7 @@ impl Aes128Ctr128 {
             }
             false => {
                 let software = Aes128Ctr128Software::from_seed_impl(key, counter);
-                Self(Aes128Ctr128Inner::Software(Box::new(RefCell::new(
-                    software,
-                ))))
+                Self(Aes128Ctr128Inner::Software(Box::new(software)))
             }
         }
     }
@@ -169,7 +178,7 @@ impl Aes128Ctr128 {
                 unsafe { this.seed_impl(key, counter) };
             }
             Aes128Ctr128Inner::Software(this) => {
-                this.borrow_mut().seed_impl(key, counter);
+                this.seed_impl(key, counter);
             }
         }
     }
@@ -177,14 +186,14 @@ impl Aes128Ctr128 {
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         match &self.0 {
             Aes128Ctr128Inner::Hardware(this) => this.is_hardware_accelerated_impl(),
-            Aes128Ctr128Inner::Software(this) => this.borrow().is_hardware_accelerated_impl(),
+            Aes128Ctr128Inner::Software(this) => this.is_hardware_accelerated_impl(),
         }
     }
 
     pub(crate) fn counter_impl(&self) -> u128 {
         match &self.0 {
             Aes128Ctr128Inner::Hardware(this) => this.counter_impl(),
-            Aes128Ctr128Inner::Software(this) => this.borrow().counter_impl(),
+            Aes128Ctr128Inner::Software(this) => this.counter_impl(),
         }
     }
 
@@ -195,7 +204,7 @@ impl Aes128Ctr128 {
                 // Safety: We checked that the hardware acceleration is available.
                 unsafe { this.next_impl() }
             }
-            Aes128Ctr128Inner::Software(this) => this.borrow_mut().next_impl(),
+            Aes128Ctr128Inner::Software(this) => this.next_impl(),
         }
     }
 }
@@ -203,7 +212,7 @@ impl Aes128Ctr128 {
 #[derive(Clone)]
 enum Aes256Ctr64Inner {
     Hardware(Box<Aes256Ctr64Hardware>),
-    Software(Box<RefCell<Aes256Ctr64Software>>),
+    Software(Box<Aes256Ctr64Software>),
 }
 
 /// A random number generator based on the AES-256 block cipher that runs in CTR mode and has a
@@ -223,7 +232,7 @@ impl Aes256Ctr64 {
             }
             false => {
                 let software = Aes256Ctr64Software::from_seed_impl(key, nonce, counter);
-                Self(Aes256Ctr64Inner::Software(Box::new(RefCell::new(software))))
+                Self(Aes256Ctr64Inner::Software(Box::new(software)))
             }
         }
     }
@@ -235,7 +244,7 @@ impl Aes256Ctr64 {
                 unsafe { this.seed_impl(key, nonce, counter) };
             }
             Aes256Ctr64Inner::Software(this) => {
-                this.borrow_mut().seed_impl(key, nonce, counter);
+                this.seed_impl(key, nonce, counter);
             }
         }
     }
@@ -243,14 +252,14 @@ impl Aes256Ctr64 {
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         match &self.0 {
             Aes256Ctr64Inner::Hardware(this) => this.is_hardware_accelerated_impl(),
-            Aes256Ctr64Inner::Software(this) => this.borrow().is_hardware_accelerated_impl(),
+            Aes256Ctr64Inner::Software(this) => this.is_hardware_accelerated_impl(),
         }
     }
 
     pub(crate) fn counter_impl(&self) -> u64 {
         match &self.0 {
             Aes256Ctr64Inner::Hardware(this) => this.counter_impl(),
-            Aes256Ctr64Inner::Software(this) => this.borrow().counter_impl(),
+            Aes256Ctr64Inner::Software(this) => this.counter_impl(),
         }
     }
 
@@ -261,7 +270,7 @@ impl Aes256Ctr64 {
                 // Safety: We checked that the hardware acceleration is available.
                 unsafe { this.next_impl() }
             }
-            Aes256Ctr64Inner::Software(this) => this.borrow_mut().next_impl(),
+            Aes256Ctr64Inner::Software(this) => this.next_impl(),
         }
     }
 }
@@ -269,7 +278,7 @@ impl Aes256Ctr64 {
 #[derive(Clone)]
 enum Aes256Ctr128Inner {
     Hardware(Box<Aes256Ctr128Hardware>),
-    Software(Box<RefCell<Aes256Ctr128Software>>),
+    Software(Box<Aes256Ctr128Software>),
 }
 
 /// A random number generator based on the AES-256 block cipher that runs in CTR mode and has a
@@ -286,7 +295,7 @@ impl Aes256Ctr128 {
                 Aes256Ctr128Inner::Hardware(Box::new(this.jump_impl()))
             }
             Aes256Ctr128Inner::Software(this) => {
-                Aes256Ctr128Inner::Software(Box::new(RefCell::new(this.borrow_mut().jump_impl())))
+                Aes256Ctr128Inner::Software(Box::new(this.jump_impl()))
             }
         };
         Self(inner)
@@ -297,9 +306,9 @@ impl Aes256Ctr128 {
             Aes256Ctr128Inner::Hardware(this) => {
                 Aes256Ctr128Inner::Hardware(Box::new(this.long_jump_impl()))
             }
-            Aes256Ctr128Inner::Software(this) => Aes256Ctr128Inner::Software(Box::new(
-                RefCell::new(this.borrow_mut().long_jump_impl()),
-            )),
+            Aes256Ctr128Inner::Software(this) => {
+                Aes256Ctr128Inner::Software(Box::new(this.long_jump_impl()))
+            }
         };
         Self(inner)
     }
@@ -313,9 +322,7 @@ impl Aes256Ctr128 {
             }
             false => {
                 let software = Aes256Ctr128Software::from_seed_impl(key, counter);
-                Self(Aes256Ctr128Inner::Software(Box::new(RefCell::new(
-                    software,
-                ))))
+                Self(Aes256Ctr128Inner::Software(Box::new(software)))
             }
         }
     }
@@ -323,7 +330,7 @@ impl Aes256Ctr128 {
     pub(crate) fn counter_impl(&self) -> u128 {
         match &self.0 {
             Aes256Ctr128Inner::Hardware(this) => this.counter_impl(),
-            Aes256Ctr128Inner::Software(this) => this.borrow().counter_impl(),
+            Aes256Ctr128Inner::Software(this) => this.counter_impl(),
         }
     }
 
@@ -334,7 +341,7 @@ impl Aes256Ctr128 {
                 unsafe { this.seed_impl(key, counter) };
             }
             Aes256Ctr128Inner::Software(this) => {
-                this.borrow_mut().seed_impl(key, counter);
+                this.seed_impl(key, counter);
             }
         }
     }
@@ -342,7 +349,7 @@ impl Aes256Ctr128 {
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
         match &self.0 {
             Aes256Ctr128Inner::Hardware(this) => this.is_hardware_accelerated_impl(),
-            Aes256Ctr128Inner::Software(this) => this.borrow().is_hardware_accelerated_impl(),
+            Aes256Ctr128Inner::Software(this) => this.is_hardware_accelerated_impl(),
         }
     }
 
@@ -353,7 +360,7 @@ impl Aes256Ctr128 {
                 // Safety: We checked that the hardware acceleration is available.
                 unsafe { this.next_impl() }
             }
-            Aes256Ctr128Inner::Software(this) => this.borrow_mut().next_impl(),
+            Aes256Ctr128Inner::Software(this) => this.next_impl(),
         }
     }
 }

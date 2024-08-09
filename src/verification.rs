@@ -1,14 +1,29 @@
 //! Test that verify that the software backend and the hardware backends produce the same random numbers for a given seed.
 
 use crate::constants::{AES128_KEY_SIZE, AES256_KEY_SIZE, AES_BLOCK_SIZE};
-use crate::fallback::software::Aes128Ctr128 as Aes128Ctr128Software;
-use crate::fallback::software::Aes128Ctr64 as Aes128Ctr64Software;
-use crate::fallback::software::Aes256Ctr128 as Aes256Ctr128Software;
-use crate::fallback::software::Aes256Ctr64 as Aes256Ctr64Software;
-use crate::hardware::Aes128Ctr128 as Aes128Ctr128Hardware;
-use crate::hardware::Aes128Ctr64 as Aes128Ctr64Hardware;
-use crate::hardware::Aes256Ctr128 as Aes256Ctr128Hardware;
-use crate::hardware::Aes256Ctr64 as Aes256Ctr64Hardware;
+
+#[cfg(any(target_arch = "x86_64", target_arch = "x86"))]
+use crate::backend::x86::{
+    Aes128Ctr128 as Aes128Ctr128Hardware, Aes128Ctr64 as Aes128Ctr64Hardware,
+    Aes256Ctr128 as Aes256Ctr128Hardware, Aes256Ctr64 as Aes256Ctr64Hardware,
+};
+
+#[cfg(all(target_arch = "riscv64", feature = "experimental_riscv"))]
+use crate::backend::riscv64::{
+    Aes128Ctr128 as Aes128Ctr128Hardware, Aes128Ctr64 as Aes128Ctr64Hardware,
+    Aes256Ctr128 as Aes256Ctr128Hardware, Aes256Ctr64 as Aes256Ctr64Hardware,
+};
+
+#[cfg(target_arch = "aarch64")]
+use crate::backend::aarch64::{
+    Aes128Ctr128 as Aes128Ctr128Hardware, Aes128Ctr64 as Aes128Ctr64Hardware,
+    Aes256Ctr128 as Aes256Ctr128Hardware, Aes256Ctr64 as Aes256Ctr64Hardware,
+};
+
+use crate::backend::soft::{
+    Aes128Ctr128 as Aes128Ctr128Software, Aes128Ctr64 as Aes128Ctr64Software,
+    Aes256Ctr128 as Aes256Ctr128Software, Aes256Ctr64 as Aes256Ctr64Software,
+};
 
 /// Runs the verification testsuite. Will panic once it finds an error.
 ///

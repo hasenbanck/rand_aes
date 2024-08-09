@@ -6,11 +6,11 @@ publish = false
 
 [features]
 experimental_riscv = ["rand_aes/experimental_riscv"]
-force_fallback = ["rand_aes/force_fallback"]
-force_no_runtime_detection = ["rand_aes/force_no_runtime_detection"]
+force_runtime_detection = ["rand_aes/force_runtime_detection"]
+force_software = ["rand_aes/force_software"]
 
 [dependencies]
-rand_aes = { path = "..", features = ["verification"] }
+rand_aes = { path = "..", default-features = false, features = ["verification"] }
 
 [[bin]]
 name = "verification"

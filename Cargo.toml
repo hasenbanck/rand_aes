@@ -22,10 +22,10 @@ tls = ["std"]
 experimental_riscv = []
 
 ### The following features are only used internally and are unstable ###
-# Forces the compiler to always use the fallback (never using the hardware AES directly).
-force_fallback = []
-# Deactivates the runtime target feature detection. Combined with `force_fallback` this forced to always using the software AES.
-force_no_runtime_detection = []
+# Forces the compiler to enable the runtime detection.
+force_runtime_detection = []
+# Forces the compiler to enable the software backend.
+force_software = []
 # Enables some functionality used for the verification executable used in CI.
 verification = ["std"]
 

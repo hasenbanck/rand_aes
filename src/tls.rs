@@ -10,41 +10,47 @@ use core::ops::RangeBounds;
 use crate::seeds::Aes128Ctr64Seed;
 use crate::Random;
 
-#[cfg(not(any(
+#[cfg(any(
     not(any(
-        all(
-            any(target_arch = "x86_64", target_arch = "x86"),
-            target_feature = "sse2",
-            target_feature = "aes",
-        ),
-        all(target_arch = "riscv64", feature = "experimental_riscv"),
-        all(
-            target_arch = "aarch64",
-            target_feature = "neon",
-            target_feature = "aes",
-        ),
+        not(any(
+            all(
+                any(target_arch = "x86_64", target_arch = "x86"),
+                target_feature = "sse2",
+                target_feature = "aes",
+            ),
+            all(target_arch = "riscv64", feature = "experimental_riscv"),
+            all(
+                target_arch = "aarch64",
+                target_feature = "neon",
+                target_feature = "aes",
+            ),
+        )),
+        feature = "force_runtime_detection"
     )),
-    feature = "force_fallback"
-)))]
+    feature = "force_software"
+))]
 thread_local! {
     pub(super) static RNG: crate::Aes128Ctr64 = const { crate::Aes128Ctr64::zeroed() };
 }
 
-#[cfg(any(
-    not(any(
-        all(
-            any(target_arch = "x86_64", target_arch = "x86"),
-            target_feature = "sse2",
-            target_feature = "aes",
-        ),
-        all(target_arch = "riscv64", feature = "experimental_riscv"),
-        all(
-            target_arch = "aarch64",
-            target_feature = "neon",
-            target_feature = "aes",
-        ),
-    )),
-    feature = "force_fallback"
+#[cfg(all(
+    any(
+        not(any(
+            all(
+                any(target_arch = "x86_64", target_arch = "x86"),
+                target_feature = "sse2",
+                target_feature = "aes",
+            ),
+            all(target_arch = "riscv64", feature = "experimental_riscv"),
+            all(
+                target_arch = "aarch64",
+                target_feature = "neon",
+                target_feature = "aes",
+            ),
+        )),
+        feature = "force_runtime_detection"
+    ),
+    not(feature = "force_software")
 ))]
 thread_local! {
     pub(super) static RNG: core::cell::LazyCell<crate::Aes128Ctr64> = core::cell::LazyCell::new(crate::Aes128Ctr64::zeroed);
