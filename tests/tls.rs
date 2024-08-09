@@ -72,11 +72,13 @@ mod test {
     test_primitive_integer!(test_prng_u16, rand_u16);
     test_primitive_integer!(test_prng_u32, rand_u32);
     test_primitive_integer!(test_prng_u64, rand_u64);
+    test_primitive_integer!(test_prng_u128, rand_u128);
     test_primitive_integer!(test_prng_usize, rand_usize);
     test_primitive_integer!(test_prng_i8, rand_i8);
     test_primitive_integer!(test_prng_i16, rand_i16);
     test_primitive_integer!(test_prng_i32, rand_i32);
     test_primitive_integer!(test_prng_i64, rand_i64);
+    test_primitive_integer!(test_prng_i128, rand_i128);
     test_primitive_integer!(test_prng_isize, rand_isize);
 
     #[test]
@@ -123,11 +125,21 @@ mod test {
     #[test]
     fn test_prng_fill_bytes() {
         rand_seed(Seed::default());
-        let mut bytes = [0u8; 16];
+        let mut bytes = [0u8; 128];
         rand_fill_bytes(&mut bytes);
         assert!(
             !bytes.iter().all(|&x| x == 0),
             "Filled bytes should not be all zeros"
+        );
+    }
+
+    #[test]
+    fn test_prng_byte_array() {
+        rand_seed(Seed::default());
+        let bytes: [u8; 128] = rand_byte_array();
+        assert!(
+            !bytes.iter().all(|&x| x == 0),
+            "Bytes array should not be all zeros"
         );
     }
 

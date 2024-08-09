@@ -70,11 +70,13 @@ test_primitive_integer!(test_prng_u8, u8);
 test_primitive_integer!(test_prng_u16, u16);
 test_primitive_integer!(test_prng_u32, u32);
 test_primitive_integer!(test_prng_u64, u64);
+test_primitive_integer!(test_prng_u128, u128);
 test_primitive_integer!(test_prng_usize, usize);
 test_primitive_integer!(test_prng_i8, i8);
 test_primitive_integer!(test_prng_i16, i16);
 test_primitive_integer!(test_prng_i32, i32);
 test_primitive_integer!(test_prng_i64, i64);
+test_primitive_integer!(test_prng_i128, i128);
 test_primitive_integer!(test_prng_isize, isize);
 
 #[test]
@@ -121,8 +123,18 @@ fn test_prng_f64() {
 #[test]
 fn test_prng_fill_bytes() {
     let prng = Aes256Ctr128::from_seed(Aes256Ctr128Seed::default());
-    let mut bytes = [0u8; 16];
+    let mut bytes = [0u8; 128];
     prng.fill_bytes(&mut bytes);
+    assert!(
+        !bytes.iter().all(|&x| x == 0),
+        "Filled bytes should not be all zeros"
+    );
+}
+
+#[test]
+fn test_prng_byte_array() {
+    let prng = Aes256Ctr128::from_seed(Aes256Ctr128Seed::default());
+    let bytes: [u8; 128] = prng.byte_array();
     assert!(
         !bytes.iter().all(|&x| x == 0),
         "Filled bytes should not be all zeros"
