@@ -16,8 +16,14 @@ rust-version = "1.80"
 default = ["std", "tls", "getrandom", "rand_core"]
 # Used for TLS and runtime target feature detection.
 std = []
-# Activates the thread local functionality.
+# Activates the thread local functionality (defaults to the AES-128, 64-bit counter version).
 tls = ["std"]
+# Uses the AES-128, 128-bit counter version for the TLS instance.
+tls_aes128_ctr128 = []
+# Uses the AES-256, 64-bit counter version for the TLS instance.
+tls_aes256_ctr64 = []
+# Uses the AES-256, 128-bit counter version for the TLS instance.
+tls_aes256_ctr128 = []
 # Enables support for experimental RISC-V vector cryptography extension. Please read the README.md.
 experimental_riscv = []
 

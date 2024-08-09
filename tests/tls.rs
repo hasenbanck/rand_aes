@@ -1,13 +1,13 @@
 #[cfg(feature = "tls")]
 mod test {
-    use rand_aes::seeds::*;
+
     use rand_aes::tls::*;
 
     macro_rules! test_range {
         ($name:ident, $method:ident, $range:expr) => {
             #[test]
             fn $name() {
-                rand_seed(Aes128Ctr64Seed::default());
+                rand_seed(Seed::default());
                 for _ in 0..1000 {
                     let value = $method($range.clone());
                     assert!(
@@ -36,7 +36,7 @@ mod test {
         ($name:ident, $method:ident, $max:expr) => {
             #[test]
             fn $name() {
-                rand_seed(Aes128Ctr64Seed::default());
+                rand_seed(Seed::default());
                 for _ in 0..1000 {
                     let value = $method($max);
                     assert!(
@@ -60,7 +60,7 @@ mod test {
         ($name:ident, $method:ident) => {
             #[test]
             fn $name() {
-                rand_seed(Aes128Ctr64Seed::default());
+                rand_seed(Seed::default());
                 for _ in 0..1000 {
                     let _value = $method();
                 }
@@ -81,7 +81,7 @@ mod test {
 
     #[test]
     fn test_prng_bool() {
-        rand_seed(Aes128Ctr64Seed::default());
+        rand_seed(Seed::default());
         let mut true_count = 0;
         let mut false_count = 0;
         for _ in 0..1000 {
@@ -98,7 +98,7 @@ mod test {
 
     #[test]
     fn test_prng_f32() {
-        rand_seed(Aes128Ctr64Seed::default());
+        rand_seed(Seed::default());
         for _ in 0..1000 {
             let value = rand_f32();
             assert!(
@@ -110,7 +110,7 @@ mod test {
 
     #[test]
     fn test_prng_f64() {
-        rand_seed(Aes128Ctr64Seed::default());
+        rand_seed(Seed::default());
         for _ in 0..1000 {
             let value = rand_f64();
             assert!(
@@ -122,7 +122,7 @@ mod test {
 
     #[test]
     fn test_prng_fill_bytes() {
-        rand_seed(Aes128Ctr64Seed::default());
+        rand_seed(Seed::default());
         let mut bytes = [0u8; 16];
         rand_fill_bytes(&mut bytes);
         assert!(
@@ -133,7 +133,7 @@ mod test {
 
     #[test]
     fn test_prng_shuffle() {
-        rand_seed(Aes128Ctr64Seed::default());
+        rand_seed(Seed::default());
         let mut array = [0usize; 256];
         for (i, x) in array.as_mut_slice().iter_mut().enumerate() {
             *x = i;

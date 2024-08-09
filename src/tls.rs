@@ -7,8 +7,39 @@
 //! [`rand_seed_from_entropy()`] or [`rand_seed()`] function.
 use core::ops::RangeBounds;
 
-use crate::seeds::Aes128Ctr64Seed;
 use crate::Random;
+
+#[cfg(not(any(
+    feature = "tls_aes128_ctr128",
+    feature = "tls_aes256_ctr64",
+    feature = "tls_aes256_ctr128"
+)))]
+use crate::Aes128Ctr64 as Prng;
+
+#[cfg(feature = "tls_aes128_ctr128")]
+use crate::Aes128Ctr128 as Prng;
+
+#[cfg(feature = "tls_aes256_ctr64")]
+use crate::Aes256Ctr64 as Prng;
+
+#[cfg(feature = "tls_aes256_ctr128")]
+use crate::Aes256Ctr128 as Prng;
+
+#[cfg(not(any(
+    feature = "tls_aes128_ctr128",
+    feature = "tls_aes256_ctr64",
+    feature = "tls_aes256_ctr128"
+)))]
+pub use crate::seeds::Aes128Ctr64Seed as Seed;
+
+#[cfg(feature = "tls_aes128_ctr128")]
+pub use crate::seeds::Aes128Ctr128Seed as Seed;
+
+#[cfg(feature = "tls_aes256_ctr64")]
+pub use crate::seeds::Aes256Ctr64Seed as Seed;
+
+#[cfg(feature = "tls_aes256_ctr128")]
+pub use crate::seeds::Aes256Ctr128Seed as Seed;
 
 #[cfg(any(
     not(any(
@@ -30,7 +61,7 @@ use crate::Random;
     feature = "force_software"
 ))]
 thread_local! {
-    pub(super) static RNG: crate::Aes128Ctr64 = const { crate::Aes128Ctr64::zeroed() };
+    pub(super) static RNG: Prng = const { Prng::zeroed() };
 }
 
 #[cfg(all(
@@ -53,7 +84,7 @@ thread_local! {
     not(feature = "force_software")
 ))]
 thread_local! {
-    pub(super) static RNG: core::cell::LazyCell<crate::Aes128Ctr64> = core::cell::LazyCell::new(crate::Aes128Ctr64::zeroed);
+    pub(super) static RNG: core::cell::LazyCell<Prng> = core::cell::LazyCell::new(Prng::zeroed);
 }
 
 /// Seeds the thread local instance using the OS entropy source.
@@ -66,7 +97,7 @@ pub fn rand_seed_from_entropy() {
 }
 
 /// Seeds the thread local instance with the given seed.
-pub fn rand_seed(seed: Aes128Ctr64Seed) {
+pub fn rand_seed(seed: Seed) {
     RNG.with(|rng| rng.seed(seed))
 }
 
