@@ -29,7 +29,14 @@ impl Drop for Aes128Ctr64 {
 }
 
 impl Aes128Ctr64 {
-    #[cfg(feature = "tls")]
+    #[cfg(all(
+        feature = "tls",
+        not(any(
+            feature = "tls_aes128_ctr128",
+            feature = "tls_aes256_ctr64",
+            feature = "tls_aes256_ctr128"
+        ))
+    ))]
     pub(crate) const fn zeroed() -> Self {
         Self {
             counter: Cell::new(unsafe { core::mem::zeroed() }),
@@ -129,6 +136,14 @@ impl Drop for Aes128Ctr128 {
 }
 
 impl Aes128Ctr128 {
+    #[cfg(all(feature = "tls", feature = "tls_aes128_ctr128"))]
+    pub(crate) const fn zeroed() -> Self {
+        Self {
+            counter: Cell::new(0),
+            round_keys: Cell::new(unsafe { core::mem::zeroed() }),
+        }
+    }
+
     pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
         self.counter.set(self.counter.get() + (1 << 64));
@@ -222,6 +237,14 @@ impl Drop for Aes256Ctr64 {
 }
 
 impl Aes256Ctr64 {
+    #[cfg(all(feature = "tls", feature = "tls_aes256_ctr64"))]
+    pub(crate) const fn zeroed() -> Self {
+        Self {
+            counter: Cell::new(unsafe { core::mem::zeroed() }),
+            round_keys: Cell::new(unsafe { core::mem::zeroed() }),
+        }
+    }
+
     #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
     #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
     pub(crate) unsafe fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
@@ -316,6 +339,14 @@ impl Drop for Aes256Ctr128 {
 }
 
 impl Aes256Ctr128 {
+    #[cfg(all(feature = "tls", feature = "tls_aes256_ctr128"))]
+    pub(crate) const fn zeroed() -> Self {
+        Self {
+            counter: Cell::new(unsafe { core::mem::zeroed() }),
+            round_keys: Cell::new(unsafe { core::mem::zeroed() }),
+        }
+    }
+
     pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
         self.counter.set(self.counter.get() + (1 << 64));

@@ -67,7 +67,14 @@ impl Drop for Aes128Ctr64 {
 }
 
 impl Aes128Ctr64 {
-    #[cfg(feature = "tls")]
+    #[cfg(all(
+        feature = "tls",
+        not(any(
+            feature = "tls_aes128_ctr128",
+            feature = "tls_aes256_ctr64",
+            feature = "tls_aes256_ctr128"
+        ))
+    ))]
     pub(crate) const fn zeroed() -> Self {
         Self(RefCell::new(Aes128Ctr64Inner {
             counter: [0; 2],
@@ -164,6 +171,16 @@ impl Drop for Aes128Ctr128 {
 }
 
 impl Aes128Ctr128 {
+    #[cfg(all(feature = "tls", feature = "tls_aes128_ctr128"))]
+    pub(crate) fn zeroed() -> Self {
+        Self(RefCell::new(Aes128Ctr128Inner {
+            counter: 0,
+            round_keys: [0; FIX_SLICE_128_KEYS_SIZE],
+            batch_blocks: [Block::default(); BLOCK_COUNT],
+            batch_num: 0,
+        }))
+    }
+
     pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
         let mut inner = self.0.borrow_mut();
@@ -260,6 +277,16 @@ impl Drop for Aes256Ctr64 {
 }
 
 impl Aes256Ctr64 {
+    #[cfg(all(feature = "tls", feature = "tls_aes256_ctr64"))]
+    pub(crate) fn zeroed() -> Self {
+        Self(RefCell::new(Aes256Ctr64Inner {
+            counter: [0, 0],
+            round_keys: [0; FIX_SLICE_256_KEYS_SIZE],
+            batch_blocks: [Block::default(); BLOCK_COUNT],
+            batch_num: 0,
+        }))
+    }
+
     pub(crate) fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
         let counter = [u64::from_le_bytes(counter), u64::from_le_bytes(nonce)];
         let round_keys: FixsliceKeys256 = aes256_key_expansion(key);
@@ -346,6 +373,16 @@ impl Drop for Aes256Ctr128 {
 }
 
 impl Aes256Ctr128 {
+    #[cfg(all(feature = "tls", feature = "tls_aes256_ctr128"))]
+    pub(crate) fn zeroed() -> Self {
+        Self(RefCell::new(Aes256Ctr128Inner {
+            counter: 0,
+            round_keys: [0; FIX_SLICE_256_KEYS_SIZE],
+            batch_blocks: [Block::default(); BLOCK_COUNT],
+            batch_num: 0,
+        }))
+    }
+
     pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
         let mut inner = self.0.borrow_mut();

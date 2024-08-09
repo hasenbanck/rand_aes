@@ -102,31 +102,31 @@ jobs:
         shell: bash
         run: |
           set -e
-          cargo test --lib
+          cargo test --lib --tests
 
       - name: Tests (force_software)
         shell: bash
         run: |
           set -e
-          cargo test --lib --features=force_software
+          cargo test --lib --tests --features=force_software
 
       - name: Tests (force_runtime_detection)
         shell: bash
         run: |
           set -e
-          cargo test --lib --features=force_runtime_detection
+          cargo test --lib --tests --features=force_runtime_detection
 
       - name: Tests no-std
         shell: bash
         run: |
           set -e
-          cargo test --lib --no-default-features
+          cargo test --lib --tests --no-default-features
 
       - name: Tests no-std (force_software)
         shell: bash
         run: |
           set -e
-          cargo test --lib --no-default-features --features=force_software
+          cargo test --lib --tests --no-default-features --features=force_software
 
   verification:
     timeout-minutes: 30

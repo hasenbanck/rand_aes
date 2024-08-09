@@ -21,7 +21,14 @@ impl Drop for Aes128Ctr64 {
 }
 
 impl Aes128Ctr64 {
-    #[cfg(feature = "tls")]
+    #[cfg(all(
+        feature = "tls",
+        not(any(
+            feature = "tls_aes128_ctr128",
+            feature = "tls_aes256_ctr64",
+            feature = "tls_aes256_ctr128"
+        ))
+    ))]
     pub(crate) const fn zeroed() -> Self {
         Self {
             counter: Cell::new([0; 2]),
@@ -157,6 +164,14 @@ impl Drop for Aes128Ctr128 {
 }
 
 impl Aes128Ctr128 {
+    #[cfg(all(feature = "tls", feature = "tls_aes128_ctr128"))]
+    pub(crate) const fn zeroed() -> Self {
+        Self {
+            counter: Cell::new(0),
+            round_keys: Cell::new([0; AES128_KEY_COUNT]),
+        }
+    }
+
     pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
         self.counter.set(self.counter.get() + (1 << 64));
@@ -295,6 +310,14 @@ impl Drop for Aes256Ctr64 {
 }
 
 impl Aes256Ctr64 {
+    #[cfg(all(feature = "tls", feature = "tls_aes256_ctr64"))]
+    pub(crate) const fn zeroed() -> Self {
+        Self {
+            counter: Cell::new([0, 0]),
+            round_keys: Cell::new([0; AES256_KEY_COUNT]),
+        }
+    }
+
     pub(crate) unsafe fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
         let mut key_0 = [0u8; 16];
         let mut key_1 = [0u8; 16];
@@ -445,6 +468,14 @@ impl Drop for Aes256Ctr128 {
 }
 
 impl Aes256Ctr128 {
+    #[cfg(all(feature = "tls", feature = "tls_aes256_ctr128"))]
+    pub(crate) const fn zeroed() -> Self {
+        Self {
+            counter: Cell::new(0),
+            round_keys: Cell::new([0; AES256_KEY_COUNT]),
+        }
+    }
+
     pub(crate) fn jump_impl(&self) -> Self {
         let clone = self.clone();
         self.counter.set(self.counter.get() + (1 << 64));
