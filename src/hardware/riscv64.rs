@@ -9,13 +9,13 @@ use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES256_KEY_COUNT, AES2
 #[derive(Clone)]
 pub struct Aes128Ctr64 {
     counter: Cell<[u64; 2]>,
-    round_keys: RefCell<[u128; AES128_KEY_COUNT]>,
+    round_keys: Cell<[u128; AES128_KEY_COUNT]>,
 }
 
 impl Drop for Aes128Ctr64 {
     fn drop(&mut self) {
         self.counter.set([0, 0]);
-        *self.round_keys.borrow_mut() = [0; AES128_KEY_COUNT];
+        self.round_keys.set([0; AES128_KEY_COUNT]);
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -25,7 +25,7 @@ impl Aes128Ctr64 {
     pub(crate) const fn zeroed() -> Self {
         Self {
             counter: Cell::new([0; 2]),
-            round_keys: RefCell::new([0; AES128_KEY_COUNT]),
+            round_keys: Cell::new([0; AES128_KEY_COUNT]),
         }
     }
 
@@ -40,7 +40,7 @@ impl Aes128Ctr64 {
 
         Self {
             counter: Cell::new(counter),
-            round_keys: RefCell::new(round_keys),
+            round_keys: Cell::new(round_keys),
         }
     }
 
@@ -54,7 +54,7 @@ impl Aes128Ctr64 {
         let round_keys = aes128_key_expansion(key);
 
         self.counter.set(counter);
-        *self.round_keys.borrow_mut() = round_keys;
+        self.round_keys.set(round_keys);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -148,13 +148,13 @@ impl Aes128Ctr64 {
 #[derive(Clone)]
 pub struct Aes128Ctr128 {
     counter: Cell<u128>,
-    round_keys: RefCell<[u128; AES128_KEY_COUNT]>,
+    round_keys: Cell<[u128; AES128_KEY_COUNT]>,
 }
 
 impl Drop for Aes128Ctr128 {
     fn drop(&mut self) {
         self.counter.set(0);
-        *self.round_keys.borrow_mut() = [0; AES128_KEY_COUNT];
+        self.round_keys.set([0; AES128_KEY_COUNT]);
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -183,7 +183,7 @@ impl Aes128Ctr128 {
 
         Self {
             counter: Cell::new(counter),
-            round_keys: RefCell::new(round_keys),
+            round_keys: Cell::new(round_keys),
         }
     }
 
@@ -197,7 +197,7 @@ impl Aes128Ctr128 {
         let round_keys = aes128_key_expansion(key);
 
         self.counter.set(counter);
-        *self.round_keys.borrow_mut() = round_keys;
+        self.round_keys.set(round_keys);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -289,13 +289,13 @@ impl Aes128Ctr128 {
 #[derive(Clone)]
 pub struct Aes256Ctr64 {
     counter: Cell<[u64; 2]>,
-    round_keys: RefCell<[u128; AES256_KEY_COUNT]>,
+    round_keys: Cell<[u128; AES256_KEY_COUNT]>,
 }
 
 impl Drop for Aes256Ctr64 {
     fn drop(&mut self) {
         self.counter.set([0, 0]);
-        *self.round_keys.borrow_mut() = [0; AES256_KEY_COUNT];
+        self.round_keys.set([0; AES256_KEY_COUNT]);
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -315,7 +315,7 @@ impl Aes256Ctr64 {
 
         Self {
             counter: Cell::new(counter),
-            round_keys: RefCell::new(round_keys),
+            round_keys: Cell::new(round_keys),
         }
     }
 
@@ -332,7 +332,7 @@ impl Aes256Ctr64 {
         let round_keys = aes256_key_expansion(key);
 
         self.counter.set(counter);
-        *self.round_keys.borrow_mut() = round_keys;
+        self.round_keys.set(round_keys);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
@@ -442,13 +442,13 @@ impl Aes256Ctr64 {
 #[derive(Clone)]
 pub struct Aes256Ctr128 {
     counter: Cell<u128>,
-    round_keys: RefCell<[u128; AES256_KEY_COUNT]>,
+    round_keys: Cell<[u128; AES256_KEY_COUNT]>,
 }
 
 impl Drop for Aes256Ctr128 {
     fn drop(&mut self) {
         self.counter.set(0);
-        *self.round_keys.borrow_mut() = [0; AES256_KEY_COUNT];
+        self.round_keys.set([0; AES256_KEY_COUNT]);
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
 }
@@ -480,7 +480,7 @@ impl Aes256Ctr128 {
 
         Self {
             counter: Cell::new(counter),
-            round_keys: RefCell::new(round_keys),
+            round_keys: Cell::new(round_keys),
         }
     }
 
@@ -501,7 +501,7 @@ impl Aes256Ctr128 {
         let round_keys = aes256_key_expansion(key);
 
         self.counter.set(counter);
-        *self.round_keys.borrow_mut() = round_keys;
+        self.round_keys.set(round_keys);
     }
 
     pub(crate) fn is_hardware_accelerated_impl(&self) -> bool {
