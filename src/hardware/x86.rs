@@ -79,27 +79,31 @@ impl Aes128Ctr64 {
     #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
-        let round_keys = self.round_keys.get();
 
         // Increment the lower 64 bits using SIMD.
         let increment = _mm_set_epi64x(0, 1);
         let new_counter = _mm_add_epi64(counter, increment);
         self.counter.set(new_counter);
 
+        // SAFETY: `Cell<T>` has the same memory layout as `T`.
+        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
+        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
+            as *const [Cell<_>; AES128_KEY_COUNT]);
+
         // Whitening the counter.
-        let mut state = _mm_xor_si128(counter, round_keys[0]);
+        let mut state = _mm_xor_si128(counter, rks[0].get());
 
         // We apply the AES encryption on the whitened counter.
-        state = _mm_aesenc_si128(state, round_keys[1]);
-        state = _mm_aesenc_si128(state, round_keys[2]);
-        state = _mm_aesenc_si128(state, round_keys[3]);
-        state = _mm_aesenc_si128(state, round_keys[4]);
-        state = _mm_aesenc_si128(state, round_keys[5]);
-        state = _mm_aesenc_si128(state, round_keys[6]);
-        state = _mm_aesenc_si128(state, round_keys[7]);
-        state = _mm_aesenc_si128(state, round_keys[8]);
-        state = _mm_aesenc_si128(state, round_keys[9]);
-        state = _mm_aesenclast_si128(state, round_keys[10]);
+        state = _mm_aesenc_si128(state, rks[1].get());
+        state = _mm_aesenc_si128(state, rks[2].get());
+        state = _mm_aesenc_si128(state, rks[3].get());
+        state = _mm_aesenc_si128(state, rks[4].get());
+        state = _mm_aesenc_si128(state, rks[5].get());
+        state = _mm_aesenc_si128(state, rks[6].get());
+        state = _mm_aesenc_si128(state, rks[7].get());
+        state = _mm_aesenc_si128(state, rks[8].get());
+        state = _mm_aesenc_si128(state, rks[9].get());
+        state = _mm_aesenclast_si128(state, rks[10].get());
 
         // Return the encrypted counter as u128.
         u128::from_le_bytes(*(&state as *const __m128i as *const _))
@@ -171,25 +175,28 @@ impl Aes128Ctr128 {
     #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
-        let round_keys = self.round_keys.get();
-
         self.counter.set(counter.wrapping_add(1));
+
+        // SAFETY: `Cell<T>` has the same memory layout as `T`.
+        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
+        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
+            as *const [Cell<_>; AES128_KEY_COUNT]);
 
         // Whitening the counter.
         let counter = _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast());
-        let mut state = _mm_xor_si128(counter, round_keys[0]);
+        let mut state = _mm_xor_si128(counter, rks[0].get());
 
         // We apply the AES encryption on the whitened counter.
-        state = _mm_aesenc_si128(state, round_keys[1]);
-        state = _mm_aesenc_si128(state, round_keys[2]);
-        state = _mm_aesenc_si128(state, round_keys[3]);
-        state = _mm_aesenc_si128(state, round_keys[4]);
-        state = _mm_aesenc_si128(state, round_keys[5]);
-        state = _mm_aesenc_si128(state, round_keys[6]);
-        state = _mm_aesenc_si128(state, round_keys[7]);
-        state = _mm_aesenc_si128(state, round_keys[8]);
-        state = _mm_aesenc_si128(state, round_keys[9]);
-        state = _mm_aesenclast_si128(state, round_keys[10]);
+        state = _mm_aesenc_si128(state, rks[1].get());
+        state = _mm_aesenc_si128(state, rks[2].get());
+        state = _mm_aesenc_si128(state, rks[3].get());
+        state = _mm_aesenc_si128(state, rks[4].get());
+        state = _mm_aesenc_si128(state, rks[5].get());
+        state = _mm_aesenc_si128(state, rks[6].get());
+        state = _mm_aesenc_si128(state, rks[7].get());
+        state = _mm_aesenc_si128(state, rks[8].get());
+        state = _mm_aesenc_si128(state, rks[9].get());
+        state = _mm_aesenclast_si128(state, rks[10].get());
 
         // Return the encrypted counter as u128.
         u128::from_le_bytes(*(&state as *const __m128i as *const _))
@@ -255,31 +262,35 @@ impl Aes256Ctr64 {
     #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
-        let round_keys = self.round_keys.get();
 
         // Increment the lower 64 bits using SIMD.
         let increment = _mm_set_epi64x(0, 1);
         let new_counter = _mm_add_epi64(counter, increment);
         self.counter.set(new_counter);
 
+        // SAFETY: `Cell<T>` has the same memory layout as `T`.
+        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
+        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
+            as *const [Cell<_>; AES256_KEY_COUNT]);
+
         // Whitening the counter.
-        let mut state = _mm_xor_si128(counter, round_keys[0]);
+        let mut state = _mm_xor_si128(counter, rks[0].get());
 
         // We apply the AES encryption on the whitened counter.
-        state = _mm_aesenc_si128(state, round_keys[1]);
-        state = _mm_aesenc_si128(state, round_keys[2]);
-        state = _mm_aesenc_si128(state, round_keys[3]);
-        state = _mm_aesenc_si128(state, round_keys[4]);
-        state = _mm_aesenc_si128(state, round_keys[5]);
-        state = _mm_aesenc_si128(state, round_keys[6]);
-        state = _mm_aesenc_si128(state, round_keys[7]);
-        state = _mm_aesenc_si128(state, round_keys[8]);
-        state = _mm_aesenc_si128(state, round_keys[9]);
-        state = _mm_aesenc_si128(state, round_keys[10]);
-        state = _mm_aesenc_si128(state, round_keys[11]);
-        state = _mm_aesenc_si128(state, round_keys[12]);
-        state = _mm_aesenc_si128(state, round_keys[13]);
-        state = _mm_aesenclast_si128(state, round_keys[14]);
+        state = _mm_aesenc_si128(state, rks[1].get());
+        state = _mm_aesenc_si128(state, rks[2].get());
+        state = _mm_aesenc_si128(state, rks[3].get());
+        state = _mm_aesenc_si128(state, rks[4].get());
+        state = _mm_aesenc_si128(state, rks[5].get());
+        state = _mm_aesenc_si128(state, rks[6].get());
+        state = _mm_aesenc_si128(state, rks[7].get());
+        state = _mm_aesenc_si128(state, rks[8].get());
+        state = _mm_aesenc_si128(state, rks[9].get());
+        state = _mm_aesenc_si128(state, rks[10].get());
+        state = _mm_aesenc_si128(state, rks[11].get());
+        state = _mm_aesenc_si128(state, rks[12].get());
+        state = _mm_aesenc_si128(state, rks[13].get());
+        state = _mm_aesenclast_si128(state, rks[14].get());
 
         // Return the encrypted counter as u128.
         u128::from_le_bytes(*(&state as *const __m128i as *const _))
@@ -351,29 +362,32 @@ impl Aes256Ctr128 {
     #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
-        let round_keys = self.round_keys.get();
-
         self.counter.set(counter.wrapping_add(1));
+
+        // SAFETY: `Cell<T>` has the same memory layout as `T`.
+        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
+        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
+            as *const [Cell<_>; AES256_KEY_COUNT]);
 
         // Whitening the counter.
         let counter = _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast());
-        let mut state = _mm_xor_si128(counter, round_keys[0]);
+        let mut state = _mm_xor_si128(counter, rks[0].get());
 
         // We apply the AES encryption on the whitened counter.
-        state = _mm_aesenc_si128(state, round_keys[1]);
-        state = _mm_aesenc_si128(state, round_keys[2]);
-        state = _mm_aesenc_si128(state, round_keys[3]);
-        state = _mm_aesenc_si128(state, round_keys[4]);
-        state = _mm_aesenc_si128(state, round_keys[5]);
-        state = _mm_aesenc_si128(state, round_keys[6]);
-        state = _mm_aesenc_si128(state, round_keys[7]);
-        state = _mm_aesenc_si128(state, round_keys[8]);
-        state = _mm_aesenc_si128(state, round_keys[9]);
-        state = _mm_aesenc_si128(state, round_keys[10]);
-        state = _mm_aesenc_si128(state, round_keys[11]);
-        state = _mm_aesenc_si128(state, round_keys[12]);
-        state = _mm_aesenc_si128(state, round_keys[13]);
-        state = _mm_aesenclast_si128(state, round_keys[14]);
+        state = _mm_aesenc_si128(state, rks[1].get());
+        state = _mm_aesenc_si128(state, rks[2].get());
+        state = _mm_aesenc_si128(state, rks[3].get());
+        state = _mm_aesenc_si128(state, rks[4].get());
+        state = _mm_aesenc_si128(state, rks[5].get());
+        state = _mm_aesenc_si128(state, rks[6].get());
+        state = _mm_aesenc_si128(state, rks[7].get());
+        state = _mm_aesenc_si128(state, rks[8].get());
+        state = _mm_aesenc_si128(state, rks[9].get());
+        state = _mm_aesenc_si128(state, rks[10].get());
+        state = _mm_aesenc_si128(state, rks[11].get());
+        state = _mm_aesenc_si128(state, rks[12].get());
+        state = _mm_aesenc_si128(state, rks[13].get());
+        state = _mm_aesenclast_si128(state, rks[14].get());
 
         // Return the encrypted counter as u128.
         u128::from_le_bytes(*(&state as *const __m128i as *const _))

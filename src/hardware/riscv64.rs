@@ -1,4 +1,7 @@
-use core::{arch::asm, cell::{Cell, RefCell}};
+use core::{
+    arch::asm,
+    cell::{Cell, RefCell},
+};
 
 use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES256_KEY_COUNT, AES256_KEY_SIZE};
 
@@ -72,11 +75,7 @@ impl Aes128Ctr64 {
         let mut new_counter = counter;
         new_counter[0] = counter[0].wrapping_add(1);
         self.counter.set(new_counter);
-        
-        // We know that there can't be any other reference to its data, and it will also not
-        // store a reference to it somewhere. So it's safe for the ASM to read from it directly.
-        // Once there are intrinsic, we can again use the cell type, since then the compiler is 
-        // able to optimize the access to it.
+
         let mut round_keys_ptr = self.round_keys.as_ptr();
 
         // Initialize the state with the counter.
@@ -214,10 +213,6 @@ impl Aes128Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        // We know that there can't be any other reference to its data, and it will also not
-        // store a reference to it somewhere. So it's safe for the ASM to read from it directly.
-        // Once there are intrinsic, we can again use the cell type, since then the compiler is 
-        // able to optimize the access to it.
         let mut round_keys_ptr = self.round_keys.as_ptr();
 
         // Initialize the state with the counter.
@@ -351,10 +346,6 @@ impl Aes256Ctr64 {
         new_counter[0] = counter[0].wrapping_add(1);
         self.counter.set(new_counter);
 
-        // We know that there can't be any other reference to its data, and it will also not
-        // store a reference to it somewhere. So it's safe for the ASM to read from it directly.
-        // Once there are intrinsic, we can again use the cell type, since then the compiler is 
-        // able to optimize the access to it.
         let mut round_keys_ptr = self.round_keys.as_ptr();
 
         // Initialize the state with the counter.
@@ -514,10 +505,6 @@ impl Aes256Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        // We know that there can't be any other reference to its data, and it will also not
-        // store a reference to it somewhere. So it's safe for the ASM to read from it directly.
-        // Once there are intrinsic, we can again use the cell type, since then the compiler is 
-        // able to optimize the access to it.
         let mut round_keys_ptr = self.round_keys.as_ptr();
 
         // Initialize the state with the counter.

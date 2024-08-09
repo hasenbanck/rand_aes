@@ -80,26 +80,30 @@ impl Aes128Ctr64 {
     #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
-        let round_keys = self.round_keys.get();
 
         // Increment the lower 64 bits using SIMD.
         let increment = vsetq_lane_u64::<0>(1, vmovq_n_u64(0));
         let new_counter = vaddq_u64(counter, increment);
         self.counter.set(new_counter);
 
+        // SAFETY: `Cell<T>` has the same memory layout as `T`.
+        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
+        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
+            as *const [Cell<_>; AES128_KEY_COUNT]);
+
         // We apply the AES encryption on the counter.
         let mut state = vreinterpretq_u8_u64(counter);
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[0]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[1]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[2]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[3]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[4]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[5]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[6]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[7]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[8]));
-        state = vaeseq_u8(state, round_keys[9]);
-        state = veorq_u8(state, round_keys[10]);
+        state = vaesmcq_u8(vaeseq_u8(state, rks[0].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[1].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[2].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[3].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[4].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[5].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[6].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[7].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[8].get()));
+        state = vaeseq_u8(state, rks[9].get());
+        state = veorq_u8(state, rks[10].get());
 
         // Return the encrypted counter as u128.
         *(&state as *const uint8x16_t as *const u128)
@@ -175,21 +179,24 @@ impl Aes128Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        let round_keys = self.round_keys.get();
+        // SAFETY: `Cell<T>` has the same memory layout as `T`.
+        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
+        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
+            as *const [Cell<_>; AES128_KEY_COUNT]);
 
         // We apply the AES encryption on the whitened counter.
         let mut state = vld1q_u8(counter.to_le_bytes().as_ptr().cast());
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[0]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[1]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[2]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[3]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[4]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[5]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[6]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[7]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[8]));
-        state = vaeseq_u8(state, round_keys[9]);
-        state = veorq_u8(state, round_keys[10]);
+        state = vaesmcq_u8(vaeseq_u8(state, rks[0].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[1].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[2].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[3].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[4].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[5].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[6].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[7].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[8].get()));
+        state = vaeseq_u8(state, rks[9].get());
+        state = veorq_u8(state, rks[10].get());
 
         // Return the encrypted counter as u128.
         *(&state as *const uint8x16_t as *const u128)
@@ -257,30 +264,33 @@ impl Aes256Ctr64 {
     #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
     pub(crate) unsafe fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
-        let round_keys = self.round_keys.get();
-
         // Increment the lower 64 bits using SIMD.
         let increment = vcombine_u64(vdup_n_u64(1), vdup_n_u64(0));
         let new_counter = vaddq_u64(counter, increment);
         self.counter.set(new_counter);
 
+        // SAFETY: `Cell<T>` has the same memory layout as `T`.
+        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
+        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
+            as *const [Cell<_>; AES256_KEY_COUNT]);
+
         // We apply the AES encryption on the counter.
         let mut state = vreinterpretq_u8_u64(counter);
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[0]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[1]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[2]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[3]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[4]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[5]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[6]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[7]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[8]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[9]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[10]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[11]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[12]));
-        state = vaeseq_u8(state, round_keys[13]);
-        state = veorq_u8(state, round_keys[14]);
+        state = vaesmcq_u8(vaeseq_u8(state, rks[0].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[1].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[2].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[3].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[4].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[5].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[6].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[7].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[8].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[9].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[10].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[11].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[12].get()));
+        state = vaeseq_u8(state, rks[13].get());
+        state = veorq_u8(state, rks[14].get());
 
         // Return the encrypted counter as u128.
         *(&state as *const uint8x16_t as *const u128)
@@ -356,25 +366,28 @@ impl Aes256Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        let round_keys = self.round_keys.get();
+        // SAFETY: `Cell<T>` has the same memory layout as `T`.
+        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
+        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
+            as *const [Cell<_>; AES256_KEY_COUNT]);
 
         // We apply the AES encryption on the counter.
         let mut state = vld1q_u8(counter.to_le_bytes().as_ptr().cast());
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[0]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[1]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[2]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[3]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[4]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[5]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[6]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[7]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[8]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[9]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[10]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[11]));
-        state = vaesmcq_u8(vaeseq_u8(state, round_keys[12]));
-        state = vaeseq_u8(state, round_keys[13]);
-        state = veorq_u8(state, round_keys[14]);
+        state = vaesmcq_u8(vaeseq_u8(state, rks[0].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[1].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[2].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[3].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[4].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[5].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[6].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[7].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[8].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[9].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[10].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[11].get()));
+        state = vaesmcq_u8(vaeseq_u8(state, rks[12].get()));
+        state = vaeseq_u8(state, rks[13].get());
+        state = veorq_u8(state, rks[14].get());
 
         // Return the encrypted counter as u128.
         *(&state as *const uint8x16_t as *const u128)
