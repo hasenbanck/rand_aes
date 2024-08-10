@@ -121,6 +121,11 @@ pub fn rand_u64() -> u64 {
     RNG.with(|rng| rng.u64())
 }
 
+/// Generates a random `u128` value.
+pub fn rand_u128() -> u128 {
+    RNG.with(|rng| rng.u128())
+}
+
 /// Generates a random `usize` value.
 pub fn rand_usize() -> usize {
     RNG.with(|rng| rng.usize())
@@ -144,6 +149,11 @@ pub fn rand_i32() -> i32 {
 /// Generates a random `i64` value.
 pub fn rand_i64() -> i64 {
     RNG.with(|rng| rng.i64())
+}
+
+/// Generates a random `i128` value.
+pub fn rand_i128() -> i128 {
+    RNG.with(|rng| rng.i128())
 }
 
 /// Generates a random `isize` value.
@@ -174,6 +184,13 @@ pub fn rand_shuffle<T>(slice: &mut [T]) {
 /// Fills a mutable `[u8]` slice with random bytes.
 pub fn rand_fill_bytes(slice: &mut [u8]) {
     RNG.with(|rng| rng.fill_bytes(slice))
+}
+
+/// Generates an array filled with random bytes.
+pub fn rand_byte_array<const N: usize>() -> [u8; N] {
+    let mut buffer = [0; N];
+    RNG.with(|rng| rng.fill_bytes(&mut buffer));
+    buffer
 }
 
 /// Generates a random `u8` value in the range of 0..n.

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2024-08-10
+
+### Added
+
+- Add `byte_array()` function to the `Random` trait.
+- Add missing `rand_u128()`, `rand_i128()` and new `rand_byte_array()` functions to the TLS API.
+
 ## [0.2.0] - 2024-08-09
 
 ### Added

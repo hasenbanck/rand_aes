@@ -241,6 +241,13 @@ pub trait Random {
             .for_each(|x| *x = self.next() as u8);
     }
 
+    /// Generates an array filled with random bytes.
+    fn byte_array<const N: usize>(&self) -> [u8; N] {
+        let mut buffer = [0; N];
+        self.fill_bytes(&mut buffer);
+        buffer
+    }
+
     /// Generates a random u8 value in the range of 0..n.
     ///
     /// # Notice
