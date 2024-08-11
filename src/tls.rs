@@ -188,9 +188,7 @@ pub fn rand_fill_bytes(slice: &mut [u8]) {
 
 /// Generates an array filled with random bytes.
 pub fn rand_byte_array<const N: usize>() -> [u8; N] {
-    let mut buffer = [0; N];
-    RNG.with(|rng| rng.fill_bytes(&mut buffer));
-    buffer
+    RNG.with(|rng| rng.byte_array::<N>())
 }
 
 /// Generates a random `u8` value in the range of 0..n.
