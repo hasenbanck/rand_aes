@@ -228,17 +228,21 @@ pub trait Random {
 
     /// Fills a mutable `[u8]` slice with random bytes.
     fn fill_bytes(&self, slice: &mut [u8]) {
-        const SIZE_BYTES: usize = (u128::BITS / 8) as usize;
+        const U128_BYTES: usize = (u128::BITS / 8) as usize;
 
-        let mut chunks = slice.chunks_exact_mut(SIZE_BYTES);
+        let mut chunks = slice.chunks_exact_mut(U128_BYTES);
         for chunk in &mut chunks {
-            let random_bytes: [u8; SIZE_BYTES] = self.next().to_le_bytes();
+            let random_bytes: [u8; U128_BYTES] = self.u128().to_le_bytes();
             chunk.copy_from_slice(&random_bytes)
         }
-        chunks
-            .into_remainder()
+
+        let remainder = chunks.into_remainder();
+        let next_bytes = self.next().to_le_bytes();
+
+        remainder
             .iter_mut()
-            .for_each(|x| *x = self.next() as u8);
+            .zip(next_bytes.as_slice())
+            .for_each(|(x, y)| *x = *y);
     }
 
     /// Generates an array filled with random bytes.
