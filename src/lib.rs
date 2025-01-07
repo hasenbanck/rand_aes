@@ -74,8 +74,27 @@ mod traits;
 mod backend;
 
 #[cfg(all(
+    feature = "force_runtime_detection",
+    not(any(
+        all(target_arch = "riscv64", feature = "experimental_riscv"),
+        target_arch = "aarch64",
+        target_arch = "x86_64",
+        target_arch = "x86",
+    ))
+))]
+compile_error!("The hardware AES implementation is not available for this platform. Remove the `force_runtime_detection` feature");
+
+#[cfg(all(feature = "force_runtime_detection", not(feature = "std")))]
+compile_error!("The runtime detection is not supported in `no_std`");
+
+#[cfg(all(
     feature = "std",
-    not(target_arch = "riscv64"),
+    any(
+        target_arch = "x86_64",
+        target_arch = "x86",
+        target_arch = "aarch64",
+        all(target_arch = "riscv64", feature = "experimental_riscv"),
+    ),
     any(
         not(any(
             all(
@@ -88,6 +107,7 @@ mod backend;
                 target_feature = "neon",
                 target_feature = "aes",
             ),
+            all(target_arch = "riscv64", feature = "experimental_riscv"),
         )),
         feature = "force_runtime_detection",
     ),
@@ -96,7 +116,12 @@ pub(crate) mod runtime;
 
 #[cfg(all(
     feature = "std",
-    not(target_arch = "riscv64"),
+    any(
+        target_arch = "x86_64",
+        target_arch = "x86",
+        target_arch = "aarch64",
+        all(target_arch = "riscv64", feature = "experimental_riscv"),
+    ),
     any(
         not(any(
             all(
@@ -109,6 +134,7 @@ pub(crate) mod runtime;
                 target_feature = "neon",
                 target_feature = "aes",
             ),
+            all(target_arch = "riscv64", feature = "experimental_riscv"),
         )),
         feature = "force_runtime_detection",
     ),

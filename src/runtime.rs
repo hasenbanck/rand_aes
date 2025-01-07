@@ -54,6 +54,14 @@ pub struct Aes128Ctr64(Aes128Ctr64Inner);
 
 impl Aes128Ctr64 {
     // This function is needed for the TLS.
+    #[cfg(all(
+        feature = "tls",
+        not(any(
+            feature = "tls_aes128_ctr128",
+            feature = "tls_aes256_ctr64",
+            feature = "tls_aes256_ctr128"
+        ))
+    ))]
     pub(crate) fn zeroed() -> Self {
         match has_hardware_acceleration() {
             true => {
