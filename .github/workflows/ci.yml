@@ -36,6 +36,10 @@ jobs:
             target: aarch64-apple-darwin
             arguments: ""
 
+          - name: Plain Wasm32 (JavaScript Host for getrandom)
+            os: ubuntu-24.04
+            target: wasm32-unknown-unknown
+            arguments: "--features getrandom/js"
     name: Clippy ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
 
@@ -80,8 +84,14 @@ jobs:
             os: macos-latest
             target: aarch64-apple-darwin
 
+          - name: Wasm32 Wasip1
+            os: ubuntu-24.04
+            target: wasm32-wasip1
+
     name: Test ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TARGET_WASM32_WASIP1_RUNNER: wasmtime
     needs: [ check ]
 
     steps:
@@ -90,7 +100,7 @@ jobs:
 
       - name: Install toolchain
         run: |
-          rustup toolchain install stable --no-self-update --profile=minimal
+          rustup toolchain install stable --no-self-update --profile=minimal --target ${{ matrix.target }}
           cargo -V
 
       - name: Caching
@@ -98,35 +108,40 @@ jobs:
         with:
           key: test-${{ matrix.target }}
 
+      - name: Setup `wasmtime`
+        if: matrix.target == 'wasm32-wasip1'
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+
       - name: Tests (default)
         shell: bash
         run: |
           set -e
-          cargo test --lib --tests
+          cargo test --lib --tests --target ${{ matrix.target }}
 
       - name: Tests (force_software)
         shell: bash
         run: |
           set -e
-          cargo test --lib --tests --features=force_software
+          cargo test --lib --tests --features=force_software --target ${{ matrix.target }}
 
       - name: Tests (force_runtime_detection)
+        if: matrix.target != 'wasm32-wasip1'
         shell: bash
         run: |
           set -e
-          cargo test --lib --tests --features=force_runtime_detection
+          cargo test --lib --tests --features=force_runtime_detection --target ${{ matrix.target }}
 
       - name: Tests no-std
         shell: bash
         run: |
           set -e
-          cargo test --lib --tests --no-default-features
+          cargo test --lib --tests --no-default-features --target ${{ matrix.target }}
 
       - name: Tests no-std (force_software)
         shell: bash
         run: |
           set -e
-          cargo test --lib --tests --no-default-features --features=force_software
+          cargo test --lib --tests --no-default-features --features=force_software --target ${{ matrix.target }}
 
   verification:
     timeout-minutes: 30
