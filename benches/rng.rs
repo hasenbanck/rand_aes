@@ -5,7 +5,7 @@ use rand_core::{RngCore, SeedableRng};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let mut seed = [0u8; 8];
-    getrandom::getrandom(&mut seed).expect("Can't get OS entropy");
+    getrandom::fill(&mut seed).expect("Can't get OS entropy");
     let seed = u64::from_ne_bytes(seed);
 
     let mut aes128_64 = Aes128Ctr64::seed_from_u64(seed);
