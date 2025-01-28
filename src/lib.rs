@@ -209,7 +209,7 @@ pub(crate) mod constants {
 #[cfg(feature = "getrandom")]
 pub(crate) fn secure_bytes<const N: usize>() -> [u8; N] {
     let mut bytes = [0u8; N];
-    getrandom::getrandom(&mut bytes).expect("Can't get random bytes from OS");
+    getrandom::fill(&mut bytes).expect("Can't get random bytes from OS");
     bytes
 }
 

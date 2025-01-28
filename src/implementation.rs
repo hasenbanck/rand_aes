@@ -312,12 +312,6 @@ impl rand_core::RngCore for Aes128Ctr64 {
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         Random::fill_bytes(self, dest);
     }
-
-    #[inline(always)]
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        Random::fill_bytes(self, dest);
-        Ok(())
-    }
 }
 
 #[cfg(feature = "rand_core")]
@@ -336,12 +330,6 @@ impl rand_core::RngCore for Aes128Ctr128 {
     #[inline(always)]
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         Random::fill_bytes(self, dest);
-    }
-
-    #[inline(always)]
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        Random::fill_bytes(self, dest);
-        Ok(())
     }
 }
 
@@ -362,12 +350,6 @@ impl rand_core::RngCore for Aes256Ctr64 {
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         Random::fill_bytes(self, dest);
     }
-
-    #[inline(always)]
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        Random::fill_bytes(self, dest);
-        Ok(())
-    }
 }
 
 #[cfg(feature = "rand_core")]
@@ -386,12 +368,6 @@ impl rand_core::RngCore for Aes256Ctr128 {
     #[inline(always)]
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         Random::fill_bytes(self, dest);
-    }
-
-    #[inline(always)]
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), rand_core::Error> {
-        Random::fill_bytes(self, dest);
-        Ok(())
     }
 }
 

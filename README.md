@@ -31,7 +31,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rand_aes = "0.1"
+rand_aes = "0.5"
 ```
 
 Then you can use it like this:
@@ -124,7 +124,7 @@ rustflags = ["-C", "target-feature=+aes"]
 
 ## Benchmark
 
-Following benchmarks were made with version v0.1.0 and enabled hardware AES target features.
+Following benchmarks were made with version v0.5.0 and enabled hardware AES target features.
 
 For aarch64 Laptop: M1 Pro (14' MacBook Pro, 2021)
 

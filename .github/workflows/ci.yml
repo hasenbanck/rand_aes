@@ -20,26 +20,31 @@ jobs:
             os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             arguments: ""
+            rustflags: ""
 
           - name: Linux x86
             os: ubuntu-24.04
             target: i686-unknown-linux-gnu
             arguments: ""
+            rustflags: ""
 
           - name: Linux riscv64gc
             os: ubuntu-24.04
             target: riscv64gc-unknown-linux-gnu
             arguments: "--features=experimental_riscv"
+            rustflags: ""
 
           - name: MacOS aarch64
             os: macos-latest
             target: aarch64-apple-darwin
             arguments: ""
+            rustflags: ""
 
           - name: Plain Wasm32 (JavaScript Host for getrandom)
             os: ubuntu-24.04
             target: wasm32-unknown-unknown
-            arguments: "--features getrandom/js"
+            arguments: "--features getrandom/wasm_js"
+            rustflags: "--cfg getrandom_backend=\"wasm_js\""
     name: Clippy ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
 
@@ -67,7 +72,7 @@ jobs:
           cargo clippy --target ${{ matrix.target }} --no-default-features
 
           # Check with default features
-          cargo clippy --target ${{ matrix.target }} ${{ matrix.arguments }}
+          RUSTFLAGS='${{ matrix.rustflags }}' cargo clippy --target ${{ matrix.target }} ${{ matrix.arguments }}
 
   test:
     timeout-minutes: 30
