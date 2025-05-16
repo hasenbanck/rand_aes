@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-05-17
+
+### Changed
+
+- Require Rust 1.87. This removes a lot of unsafe code, since a lot of arch code can now be used safely.
+
 ## [0.5.0] - 2025-01-28
 
 ### Changed

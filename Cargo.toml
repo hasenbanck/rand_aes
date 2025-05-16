@@ -8,9 +8,9 @@ license = "Apache-2.0"
 readme = "README.md"
 documentation = "https://docs.rs/rand_aes"
 repository = "https://github.com/hasenbanck/rand_aes"
-version = "0.5.0"
-edition = "2021"
-rust-version = "1.80"
+version = "0.6.0"
+edition = "2024"
+rust-version = "1.87"
 
 [features]
 default = ["std", "tls", "getrandom", "rand_core"]
@@ -42,7 +42,7 @@ rand_core = { version = "0.9", optional = true }
 getrandom = { version = "0.3", optional = true }
 
 [dev-dependencies]
-hex-literal = "0.4"
+hex-literal = "1"
 rand_chacha = "0.9"
 rand_pcg = "0.9"
 

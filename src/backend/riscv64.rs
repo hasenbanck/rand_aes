@@ -87,58 +87,60 @@ impl Aes128Ctr64 {
         let mut state = counter;
         let state_ptr = state.as_mut_ptr();
 
-        asm!(
-            "vsetivli x0, 4, e32, m1, ta, ma",
-            "vle32.v v0, (t0)", // Load counter into a register
-            "vle32.v v1, (t1)", // Copy all round keys into the vector registers
-            "addi t1, t1, 16",
-            "vle32.v v2, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v3, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v4, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v5, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v6, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v7, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v8, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v9, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v10, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v11, (t1)",
-            "vaesz.vs v0, v1", // Whiten the counter
-            "vaesem.vs v0, v2", // Apply 10 rounds of AES
-            "vaesem.vs v0, v3",
-            "vaesem.vs v0, v4",
-            "vaesem.vs v0, v5",
-            "vaesem.vs v0, v6",
-            "vaesem.vs v0, v7",
-            "vaesem.vs v0, v8",
-            "vaesem.vs v0, v9",
-            "vaesem.vs v0, v10",
-            "vaesef.vs v0, v11",
-            "vse32.v v0, (t0)", // Store the state
-            options(nostack),
-            in("t0") state_ptr,
-            inout("t1") round_keys_ptr,
-            out("v0") _,
-            out("v1") _,
-            out("v2") _,
-            out("v3") _,
-            out("v4") _,
-            out("v5") _,
-            out("v6") _,
-            out("v7") _,
-            out("v8") _,
-            out("v9") _,
-            out("v10") _,
-            out("v11") _,
-        );
+        unsafe {
+            asm!(
+                "vsetivli x0, 4, e32, m1, ta, ma",
+                "vle32.v v0, (t0)", // Load counter into a register
+                "vle32.v v1, (t1)", // Copy all round keys into the vector registers
+                "addi t1, t1, 16",
+                "vle32.v v2, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v3, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v4, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v5, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v6, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v7, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v8, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v9, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v10, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v11, (t1)",
+                "vaesz.vs v0, v1", // Whiten the counter
+                "vaesem.vs v0, v2", // Apply 10 rounds of AES
+                "vaesem.vs v0, v3",
+                "vaesem.vs v0, v4",
+                "vaesem.vs v0, v5",
+                "vaesem.vs v0, v6",
+                "vaesem.vs v0, v7",
+                "vaesem.vs v0, v8",
+                "vaesem.vs v0, v9",
+                "vaesem.vs v0, v10",
+                "vaesef.vs v0, v11",
+                "vse32.v v0, (t0)", // Store the state
+                options(nostack),
+                in("t0") state_ptr,
+                inout("t1") round_keys_ptr,
+                out("v0") _,
+                out("v1") _,
+                out("v2") _,
+                out("v3") _,
+                out("v4") _,
+                out("v5") _,
+                out("v6") _,
+                out("v7") _,
+                out("v8") _,
+                out("v9") _,
+                out("v10") _,
+                out("v11") _,
+            );
+        }
 
         // Return the encrypted counter as u128.
         u128::from(state[0]) | (u128::from(state[1]) << 64)
@@ -233,58 +235,60 @@ impl Aes128Ctr128 {
         let mut state = counter;
         let state_ptr = (&mut state) as *mut u128;
 
-        asm!(
-            "vsetivli x0, 4, e32, m1, ta, ma",
-            "vle32.v v0, (t0)", // Load counter into a register
-            "vle32.v v1, (t1)", // Copy all round keys into the vector registers
-            "addi t1, t1, 16",
-            "vle32.v v2, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v3, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v4, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v5, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v6, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v7, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v8, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v9, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v10, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v11, (t1)",
-            "vaesz.vs v0, v1", // Whiten the counter
-            "vaesem.vs v0, v2", // Apply 10 rounds of AES
-            "vaesem.vs v0, v3",
-            "vaesem.vs v0, v4",
-            "vaesem.vs v0, v5",
-            "vaesem.vs v0, v6",
-            "vaesem.vs v0, v7",
-            "vaesem.vs v0, v8",
-            "vaesem.vs v0, v9",
-            "vaesem.vs v0, v10",
-            "vaesef.vs v0, v11",
-            "vse32.v v0, (t0)", // Store the state
-            options(nostack),
-            in("t0") state_ptr,
-            inout("t1") round_keys_ptr,
-            out("v0") _,
-            out("v1") _,
-            out("v2") _,
-            out("v3") _,
-            out("v4") _,
-            out("v5") _,
-            out("v6") _,
-            out("v7") _,
-            out("v8") _,
-            out("v9") _,
-            out("v10") _,
-            out("v11") _,
-        );
+        unsafe {
+            asm!(
+                "vsetivli x0, 4, e32, m1, ta, ma",
+                "vle32.v v0, (t0)", // Load counter into a register
+                "vle32.v v1, (t1)", // Copy all round keys into the vector registers
+                "addi t1, t1, 16",
+                "vle32.v v2, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v3, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v4, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v5, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v6, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v7, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v8, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v9, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v10, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v11, (t1)",
+                "vaesz.vs v0, v1", // Whiten the counter
+                "vaesem.vs v0, v2", // Apply 10 rounds of AES
+                "vaesem.vs v0, v3",
+                "vaesem.vs v0, v4",
+                "vaesem.vs v0, v5",
+                "vaesem.vs v0, v6",
+                "vaesem.vs v0, v7",
+                "vaesem.vs v0, v8",
+                "vaesem.vs v0, v9",
+                "vaesem.vs v0, v10",
+                "vaesef.vs v0, v11",
+                "vse32.v v0, (t0)", // Store the state
+                options(nostack),
+                in("t0") state_ptr,
+                inout("t1") round_keys_ptr,
+                out("v0") _,
+                out("v1") _,
+                out("v2") _,
+                out("v3") _,
+                out("v4") _,
+                out("v5") _,
+                out("v6") _,
+                out("v7") _,
+                out("v8") _,
+                out("v9") _,
+                out("v10") _,
+                out("v11") _,
+            );
+        }
 
         // Return the encrypted counter as u128.
         state
@@ -375,74 +379,76 @@ impl Aes256Ctr64 {
         let mut state = counter;
         let state_ptr = state.as_mut_ptr();
 
-        asm!(
-            "vsetivli x0, 4, e32, m1, ta, ma",
-            "vle32.v v0, (t0)", // Load counter into a register
-            "vle32.v v1, (t1)", // Copy all round keys into the vector registers
-            "addi t1, t1, 16",
-            "vle32.v v2, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v3, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v4, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v5, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v6, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v7, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v8, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v9, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v10, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v11, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v12, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v13, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v14, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v15, (t1)",
-            "vaesz.vs v0, v1", // Whiten the counter
-            "vaesem.vs v0, v2", // Apply 14 rounds of AES
-            "vaesem.vs v0, v3",
-            "vaesem.vs v0, v4",
-            "vaesem.vs v0, v5",
-            "vaesem.vs v0, v6",
-            "vaesem.vs v0, v7",
-            "vaesem.vs v0, v8",
-            "vaesem.vs v0, v9",
-            "vaesem.vs v0, v10",
-            "vaesem.vs v0, v11",
-            "vaesem.vs v0, v12",
-            "vaesem.vs v0, v13",
-            "vaesem.vs v0, v14",
-            "vaesef.vs v0, v15",
-            "vse32.v v0, (t0)", // Store the state
-            options(nostack),
-            in("t0") state_ptr,
-            inout("t1") round_keys_ptr,
-            out("v0") _,
-            out("v1") _,
-            out("v2") _,
-            out("v3") _,
-            out("v4") _,
-            out("v5") _,
-            out("v6") _,
-            out("v7") _,
-            out("v8") _,
-            out("v9") _,
-            out("v10") _,
-            out("v11") _,
-            out("v12") _,
-            out("v13") _,
-            out("v14") _,
-            out("v15") _,
-        );
+        unsafe {
+            asm!(
+                "vsetivli x0, 4, e32, m1, ta, ma",
+                "vle32.v v0, (t0)", // Load counter into a register
+                "vle32.v v1, (t1)", // Copy all round keys into the vector registers
+                "addi t1, t1, 16",
+                "vle32.v v2, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v3, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v4, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v5, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v6, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v7, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v8, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v9, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v10, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v11, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v12, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v13, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v14, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v15, (t1)",
+                "vaesz.vs v0, v1", // Whiten the counter
+                "vaesem.vs v0, v2", // Apply 14 rounds of AES
+                "vaesem.vs v0, v3",
+                "vaesem.vs v0, v4",
+                "vaesem.vs v0, v5",
+                "vaesem.vs v0, v6",
+                "vaesem.vs v0, v7",
+                "vaesem.vs v0, v8",
+                "vaesem.vs v0, v9",
+                "vaesem.vs v0, v10",
+                "vaesem.vs v0, v11",
+                "vaesem.vs v0, v12",
+                "vaesem.vs v0, v13",
+                "vaesem.vs v0, v14",
+                "vaesef.vs v0, v15",
+                "vse32.v v0, (t0)", // Store the state
+                options(nostack),
+                in("t0") state_ptr,
+                inout("t1") round_keys_ptr,
+                out("v0") _,
+                out("v1") _,
+                out("v2") _,
+                out("v3") _,
+                out("v4") _,
+                out("v5") _,
+                out("v6") _,
+                out("v7") _,
+                out("v8") _,
+                out("v9") _,
+                out("v10") _,
+                out("v11") _,
+                out("v12") _,
+                out("v13") _,
+                out("v14") _,
+                out("v15") _,
+            );
+        }
 
         // Return the encrypted counter as u128.
         u128::from(state[0]) | (u128::from(state[1]) << 64)
@@ -543,74 +549,76 @@ impl Aes256Ctr128 {
         let mut state = counter;
         let state_ptr = (&mut state) as *mut u128;
 
-        asm!(
-            "vsetivli x0, 4, e32, m1, ta, ma",
-            "vle32.v v0, (t0)", // Load counter into a register
-            "vle32.v v1, (t1)", // Copy all round keys into the vector registers
-            "addi t1, t1, 16",
-            "vle32.v v2, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v3, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v4, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v5, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v6, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v7, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v8, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v9, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v10, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v11, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v12, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v13, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v14, (t1)",
-            "addi t1, t1, 16",
-            "vle32.v v15, (t1)",
-            "vaesz.vs v0, v1", // Whiten the counter
-            "vaesem.vs v0, v2", // Apply 14 rounds of AES
-            "vaesem.vs v0, v3",
-            "vaesem.vs v0, v4",
-            "vaesem.vs v0, v5",
-            "vaesem.vs v0, v6",
-            "vaesem.vs v0, v7",
-            "vaesem.vs v0, v8",
-            "vaesem.vs v0, v9",
-            "vaesem.vs v0, v10",
-            "vaesem.vs v0, v11",
-            "vaesem.vs v0, v12",
-            "vaesem.vs v0, v13",
-            "vaesem.vs v0, v14",
-            "vaesef.vs v0, v15",
-            "vse32.v v0, (t0)", // Store the state
-            options(nostack),
-            in("t0") state_ptr,
-            inout("t1") round_keys_ptr,
-            out("v0") _,
-            out("v1") _,
-            out("v2") _,
-            out("v3") _,
-            out("v4") _,
-            out("v5") _,
-            out("v6") _,
-            out("v7") _,
-            out("v8") _,
-            out("v9") _,
-            out("v10") _,
-            out("v11") _,
-            out("v12") _,
-            out("v13") _,
-            out("v14") _,
-            out("v15") _,
-        );
+        unsafe {
+            asm!(
+                "vsetivli x0, 4, e32, m1, ta, ma",
+                "vle32.v v0, (t0)", // Load counter into a register
+                "vle32.v v1, (t1)", // Copy all round keys into the vector registers
+                "addi t1, t1, 16",
+                "vle32.v v2, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v3, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v4, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v5, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v6, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v7, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v8, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v9, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v10, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v11, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v12, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v13, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v14, (t1)",
+                "addi t1, t1, 16",
+                "vle32.v v15, (t1)",
+                "vaesz.vs v0, v1", // Whiten the counter
+                "vaesem.vs v0, v2", // Apply 14 rounds of AES
+                "vaesem.vs v0, v3",
+                "vaesem.vs v0, v4",
+                "vaesem.vs v0, v5",
+                "vaesem.vs v0, v6",
+                "vaesem.vs v0, v7",
+                "vaesem.vs v0, v8",
+                "vaesem.vs v0, v9",
+                "vaesem.vs v0, v10",
+                "vaesem.vs v0, v11",
+                "vaesem.vs v0, v12",
+                "vaesem.vs v0, v13",
+                "vaesem.vs v0, v14",
+                "vaesef.vs v0, v15",
+                "vse32.v v0, (t0)", // Store the state
+                options(nostack),
+                in("t0") state_ptr,
+                inout("t1") round_keys_ptr,
+                out("v0") _,
+                out("v1") _,
+                out("v2") _,
+                out("v3") _,
+                out("v4") _,
+                out("v5") _,
+                out("v6") _,
+                out("v7") _,
+                out("v8") _,
+                out("v9") _,
+                out("v10") _,
+                out("v11") _,
+                out("v12") _,
+                out("v13") _,
+                out("v14") _,
+                out("v15") _,
+            );
+        }
 
         // Return the encrypted counter as u128.
         state
@@ -623,45 +631,47 @@ unsafe fn aes128_key_expansion(key: u128) -> [u128; AES128_KEY_COUNT] {
     let key_ptr = &key as *const u128;
     let mut expanded_ptr = expanded_keys.as_mut_ptr();
 
-    asm!(
-        "vsetivli x0, 4, e32, m4, ta, ma",
-        "vle32.v v0, (t0)", // Load key as state and copy into expanded
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 1", // Round 1
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 2", // Round 2
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 3", // Round 3
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 4", // Round 4
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 5", // Round 5
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 6", // Round 6
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 7", // Round 7
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 8", // Round 8
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 9", // Round 9
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf1.vi v0, v0, 10", // Round 10
-        "add t1, t1, 16",
-        "vse32.v v0, (t1)",
-        in("t0") key_ptr,
-        inout("t1") expanded_ptr,
-        options(nostack),
-        out("v0") _,
-    );
+    unsafe {
+        asm!(
+            "vsetivli x0, 4, e32, m4, ta, ma",
+            "vle32.v v0, (t0)", // Load key as state and copy into expanded
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 1", // Round 1
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 2", // Round 2
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 3", // Round 3
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 4", // Round 4
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 5", // Round 5
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 6", // Round 6
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 7", // Round 7
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 8", // Round 8
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 9", // Round 9
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf1.vi v0, v0, 10", // Round 10
+            "add t1, t1, 16",
+            "vse32.v v0, (t1)",
+            in("t0") key_ptr,
+            inout("t1") expanded_ptr,
+            options(nostack),
+            out("v0") _,
+        );
+    }
 
     expanded_keys
 }
@@ -672,59 +682,61 @@ unsafe fn aes256_key_expansion(key: [u128; 2]) -> [u128; AES256_KEY_COUNT] {
     let mut key_ptr = &key as *const u128;
     let mut expanded_ptr = expanded_keys.as_mut_ptr();
 
-    asm!(
-        "vsetivli x0, 4, e32, m4, ta, ma",
-        "vle32.v v0, (t0)",
-        "addi t0, t0, 16",
-        "vle32.v v4, (t0)",
-        "vse32.v v0, (t1)",
-        "add t1, t1, 16",
-        "vse32.v v4, (t1)",
-        "vaeskf2.vi v0, v4, 2", // Round 2
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf2.vi v4, v0, 3", // Round 3
-        "addi t1, t1, 16",
-        "vse32.v v4, (t1)",
-        "vaeskf2.vi v0, v4, 4", // Round 4
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf2.vi v4, v0, 5", // Round 5
-        "addi t1, t1, 16",
-        "vse32.v v4, (t1)",
-        "vaeskf2.vi v0, v4, 6", // Round 6
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf2.vi v4, v0, 7", // Round 7
-        "addi t1, t1, 16",
-        "vse32.v v4, (t1)",
-        "vaeskf2.vi v0, v4, 8", // Round 8
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf2.vi v4, v0, 9", // Round 9
-        "addi t1, t1, 16",
-        "vse32.v v4, (t1)",
-        "vaeskf2.vi v0, v4, 10", // Round 10
-        "addi t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf2.vi v4, v0, 11", // Round 11
-        "add t1, t1, 16",
-        "vse32.v v4, (t1)",
-        "vaeskf2.vi v0, v4, 12", // Round 12
-        "add t1, t1, 16",
-        "vse32.v v0, (t1)",
-        "vaeskf2.vi v4, v0, 13", // Round 13
-        "add t1, t1, 16",
-        "vse32.v v4, (t1)",
-        "vaeskf2.vi v0, v4, 14", // Round 14
-        "add t1, t1, 16",
-        "vse32.v v0, (t1)",
-        inout("t0") key_ptr,
-        inout("t1") expanded_ptr,
-        options(nostack),
-        out("v0") _,
-        out("v4") _,
-    );
+    unsafe {
+        asm!(
+            "vsetivli x0, 4, e32, m4, ta, ma",
+            "vle32.v v0, (t0)",
+            "addi t0, t0, 16",
+            "vle32.v v4, (t0)",
+            "vse32.v v0, (t1)",
+            "add t1, t1, 16",
+            "vse32.v v4, (t1)",
+            "vaeskf2.vi v0, v4, 2", // Round 2
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf2.vi v4, v0, 3", // Round 3
+            "addi t1, t1, 16",
+            "vse32.v v4, (t1)",
+            "vaeskf2.vi v0, v4, 4", // Round 4
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf2.vi v4, v0, 5", // Round 5
+            "addi t1, t1, 16",
+            "vse32.v v4, (t1)",
+            "vaeskf2.vi v0, v4, 6", // Round 6
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf2.vi v4, v0, 7", // Round 7
+            "addi t1, t1, 16",
+            "vse32.v v4, (t1)",
+            "vaeskf2.vi v0, v4, 8", // Round 8
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf2.vi v4, v0, 9", // Round 9
+            "addi t1, t1, 16",
+            "vse32.v v4, (t1)",
+            "vaeskf2.vi v0, v4, 10", // Round 10
+            "addi t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf2.vi v4, v0, 11", // Round 11
+            "add t1, t1, 16",
+            "vse32.v v4, (t1)",
+            "vaeskf2.vi v0, v4, 12", // Round 12
+            "add t1, t1, 16",
+            "vse32.v v0, (t1)",
+            "vaeskf2.vi v4, v0, 13", // Round 13
+            "add t1, t1, 16",
+            "vse32.v v4, (t1)",
+            "vaeskf2.vi v0, v4, 14", // Round 14
+            "add t1, t1, 16",
+            "vse32.v v0, (t1)",
+            inout("t0") key_ptr,
+            inout("t1") expanded_ptr,
+            options(nostack),
+            out("v0") _,
+            out("v4") _,
+        );
+    }
 
     expanded_keys
 }
@@ -737,7 +749,7 @@ unsafe fn aes256_key_expansion(key: [u128; 2]) -> [u128; AES256_KEY_COUNT] {
 ))]
 mod tests {
     use super::*;
-    use crate::constants::{AES128_KEY_COUNT, AES128_KEY_SIZE, AES_BLOCK_SIZE};
+    use crate::constants::{AES_BLOCK_SIZE, AES128_KEY_COUNT, AES128_KEY_SIZE};
     use crate::tests::{aes128_key_expansion_test, aes256_key_expansion_test};
 
     #[test]

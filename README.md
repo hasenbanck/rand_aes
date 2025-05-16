@@ -31,7 +31,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rand_aes = "0.5"
+rand_aes = "0.6"
 ```
 
 Then you can use it like this:
@@ -79,7 +79,7 @@ a handwritten ASM implementation. Since there is currently no way to discover th
 extension (August 2024), you need to select the needed target features and an experimental create feature at compile
 time. The generated executable will only run on systems with a vector crypto extension.
 
-Activate the target features vor the vector extension and the vector crypto extension. This can be done for example
+Activate the target features for the vector extension and the vector crypto extension. This can be done for example
 inside the `.cargo/config.toml`:
 
 ```toml

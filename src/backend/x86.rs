@@ -46,9 +46,8 @@ impl Aes128Ctr64 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn from_seed_impl(key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) -> Self {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn from_seed_impl(key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) -> Self {
         let counter =
             ((u64::from_le_bytes(nonce) as u128) << 64) + u64::from_le_bytes(counter) as u128;
         let counter = unsafe { _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast()) };
@@ -60,9 +59,8 @@ impl Aes128Ctr64 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn seed_impl(&self, key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn seed_impl(&self, key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) {
         let counter =
             ((u64::from_le_bytes(nonce) as u128) << 64) + u64::from_le_bytes(counter) as u128;
         let counter = unsafe { _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast()) };
@@ -81,10 +79,8 @@ impl Aes128Ctr64 {
         u128::from_le_bytes(bytes) as u64
     }
 
-    #[cfg_attr(all(target_feature = "sse2", target_feature = "aes"), inline(always))]
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn next_impl(&self) -> u128 {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
 
         // Increment the lower 64 bits using SIMD.
@@ -94,8 +90,10 @@ impl Aes128Ctr64 {
 
         // SAFETY: `Cell<T>` has the same memory layout as `T`.
         // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
-            as *const [Cell<_>; AES128_KEY_COUNT]);
+        let rks = unsafe {
+            &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
+                as *const [Cell<_>; AES128_KEY_COUNT])
+        };
 
         // Whitening the counter.
         let mut state = _mm_xor_si128(counter, rks[0].get());
@@ -113,7 +111,7 @@ impl Aes128Ctr64 {
         state = _mm_aesenclast_si128(state, rks[10].get());
 
         // Return the encrypted counter as u128.
-        u128::from_le_bytes(*(&state as *const __m128i as *const _))
+        u128::from_le_bytes(unsafe { *(&state as *const __m128i as *const _) })
     }
 }
 
@@ -156,9 +154,8 @@ impl Aes128Ctr128 {
         clone
     }
 
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn from_seed_impl(key: [u8; 16], counter: [u8; 16]) -> Self {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn from_seed_impl(key: [u8; 16], counter: [u8; 16]) -> Self {
         let counter = u128::from_le_bytes(counter);
         let round_keys: [__m128i; AES128_KEY_COUNT] = aes128_key_expansion(key);
         Self {
@@ -167,9 +164,8 @@ impl Aes128Ctr128 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn seed_impl(&self, key: [u8; 16], counter: [u8; 16]) {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn seed_impl(&self, key: [u8; 16], counter: [u8; 16]) {
         let counter = u128::from_le_bytes(counter);
         let round_keys: [__m128i; AES128_KEY_COUNT] = aes128_key_expansion(key);
 
@@ -185,20 +181,20 @@ impl Aes128Ctr128 {
         self.counter.get()
     }
 
-    #[cfg_attr(all(target_feature = "sse2", target_feature = "aes"), inline(always))]
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn next_impl(&self) -> u128 {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
         // SAFETY: `Cell<T>` has the same memory layout as `T`.
         // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
-            as *const [Cell<_>; AES128_KEY_COUNT]);
+        let rks = unsafe {
+            &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
+                as *const [Cell<_>; AES128_KEY_COUNT])
+        };
 
         // Whitening the counter.
-        let counter = _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast());
+        let counter = unsafe { _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast()) };
         let mut state = _mm_xor_si128(counter, rks[0].get());
 
         // We apply the AES encryption on the whitened counter.
@@ -214,7 +210,7 @@ impl Aes128Ctr128 {
         state = _mm_aesenclast_si128(state, rks[10].get());
 
         // Return the encrypted counter as u128.
-        u128::from_le_bytes(*(&state as *const __m128i as *const _))
+        u128::from_le_bytes(unsafe { *(&state as *const __m128i as *const _) })
     }
 }
 
@@ -245,9 +241,8 @@ impl Aes256Ctr64 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
         let counter =
             ((u64::from_le_bytes(nonce) as u128) << 64) + u64::from_le_bytes(counter) as u128;
         let counter = unsafe { _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast()) };
@@ -259,9 +254,8 @@ impl Aes256Ctr64 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn seed_impl(&self, key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn seed_impl(&self, key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) {
         let counter =
             ((u64::from_le_bytes(nonce) as u128) << 64) + u64::from_le_bytes(counter) as u128;
         let counter = unsafe { _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast()) };
@@ -280,10 +274,8 @@ impl Aes256Ctr64 {
         u128::from_le_bytes(bytes) as u64
     }
 
-    #[cfg_attr(all(target_feature = "sse2", target_feature = "aes"), inline(always))]
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn next_impl(&self) -> u128 {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
 
         // Increment the lower 64 bits using SIMD.
@@ -293,8 +285,10 @@ impl Aes256Ctr64 {
 
         // SAFETY: `Cell<T>` has the same memory layout as `T`.
         // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
-            as *const [Cell<_>; AES256_KEY_COUNT]);
+        let rks = unsafe {
+            &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
+                as *const [Cell<_>; AES256_KEY_COUNT])
+        };
 
         // Whitening the counter.
         let mut state = _mm_xor_si128(counter, rks[0].get());
@@ -316,7 +310,7 @@ impl Aes256Ctr64 {
         state = _mm_aesenclast_si128(state, rks[14].get());
 
         // Return the encrypted counter as u128.
-        u128::from_le_bytes(*(&state as *const __m128i as *const _))
+        u128::from_le_bytes(unsafe { *(&state as *const __m128i as *const _) })
     }
 }
 
@@ -359,9 +353,8 @@ impl Aes256Ctr128 {
         clone
     }
 
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn from_seed_impl(key: [u8; 32], counter: [u8; 16]) -> Self {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn from_seed_impl(key: [u8; 32], counter: [u8; 16]) -> Self {
         let counter = u128::from_le_bytes(counter);
         let round_keys: [__m128i; 15] = aes256_key_expansion(key);
         Self {
@@ -370,9 +363,8 @@ impl Aes256Ctr128 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn seed_impl(&self, key: [u8; 32], counter: [u8; 16]) {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn seed_impl(&self, key: [u8; 32], counter: [u8; 16]) {
         let counter = u128::from_le_bytes(counter);
         let round_keys: [__m128i; 15] = aes256_key_expansion(key);
 
@@ -388,20 +380,20 @@ impl Aes256Ctr128 {
         self.counter.get()
     }
 
-    #[cfg_attr(all(target_feature = "sse2", target_feature = "aes"), inline(always))]
-    #[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    pub(crate) unsafe fn next_impl(&self) -> u128 {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    pub(crate) fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
         // SAFETY: `Cell<T>` has the same memory layout as `T`.
         // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
-            as *const [Cell<_>; AES256_KEY_COUNT]);
+        let rks = unsafe {
+            &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
+                as *const [Cell<_>; AES256_KEY_COUNT])
+        };
 
         // Whitening the counter.
-        let counter = _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast());
+        let counter = unsafe { _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast()) };
         let mut state = _mm_xor_si128(counter, rks[0].get());
 
         // We apply the AES encryption on the whitened counter.
@@ -421,13 +413,14 @@ impl Aes256Ctr128 {
         state = _mm_aesenclast_si128(state, rks[14].get());
 
         // Return the encrypted counter as u128.
-        u128::from_le_bytes(*(&state as *const __m128i as *const _))
+        u128::from_le_bytes(unsafe { *(&state as *const __m128i as *const _) })
     }
 }
 
-#[target_feature(enable = "aes")]
-pub unsafe fn aes128_key_expansion(key: [u8; AES128_KEY_SIZE]) -> [__m128i; AES128_KEY_COUNT] {
-    unsafe fn generate_round_key<const RCON: i32, const ROUND: usize>(
+#[target_feature(enable = "sse2", enable = "aes")]
+pub fn aes128_key_expansion(key: [u8; AES128_KEY_SIZE]) -> [__m128i; AES128_KEY_COUNT] {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    fn generate_round_key<const RCON: i32, const ROUND: usize>(
         expanded_keys: &mut [__m128i; AES128_KEY_COUNT],
     ) {
         let prev_key = expanded_keys[ROUND - 1];
@@ -440,9 +433,9 @@ pub unsafe fn aes128_key_expansion(key: [u8; AES128_KEY_SIZE]) -> [__m128i; AES1
         key = _mm_xor_si128(key, _mm_slli_si128::<0x4>(key));
         expanded_keys[ROUND] = _mm_xor_si128(key, temp);
     }
-    let mut expanded_keys: [__m128i; AES128_KEY_COUNT] = core::mem::zeroed();
+    let mut expanded_keys: [__m128i; AES128_KEY_COUNT] = unsafe { core::mem::zeroed() };
 
-    expanded_keys[0] = _mm_loadu_si128(key.as_ptr().cast());
+    expanded_keys[0] = unsafe { _mm_loadu_si128(key.as_ptr().cast()) };
 
     generate_round_key::<0x01, 1>(&mut expanded_keys);
     generate_round_key::<0x02, 2>(&mut expanded_keys);
@@ -458,10 +451,10 @@ pub unsafe fn aes128_key_expansion(key: [u8; AES128_KEY_SIZE]) -> [__m128i; AES1
     expanded_keys
 }
 
-#[cfg_attr(not(target_feature = "sse2"), target_feature(enable = "sse2"))]
-#[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-pub unsafe fn aes256_key_expansion(key: [u8; AES256_KEY_SIZE]) -> [__m128i; AES256_KEY_COUNT] {
-    unsafe fn generate_round_keys<const RCON: i32, const RNUM: usize>(
+#[target_feature(enable = "sse2", enable = "aes")]
+pub fn aes256_key_expansion(key: [u8; AES256_KEY_SIZE]) -> [__m128i; AES256_KEY_COUNT] {
+    #[target_feature(enable = "sse2", enable = "aes")]
+    fn generate_round_keys<const RCON: i32, const RNUM: usize>(
         expanded_keys: &mut [__m128i; AES256_KEY_COUNT],
     ) {
         let prev_key_0 = expanded_keys[RNUM * 2];
@@ -489,11 +482,11 @@ pub unsafe fn aes256_key_expansion(key: [u8; AES256_KEY_SIZE]) -> [__m128i; AES2
             expanded_keys[(RNUM * 2) + 3] = key;
         }
     }
-    let mut expanded_keys: [__m128i; AES256_KEY_COUNT] = core::mem::zeroed();
+    let mut expanded_keys: [__m128i; AES256_KEY_COUNT] = unsafe { core::mem::zeroed() };
 
     // Load the initial key.
-    expanded_keys[0] = _mm_loadu_si128(key.as_ptr().cast());
-    expanded_keys[1] = _mm_loadu_si128(key[16..].as_ptr().cast());
+    expanded_keys[0] = unsafe { _mm_loadu_si128(key.as_ptr().cast()) };
+    expanded_keys[1] = unsafe { _mm_loadu_si128(key[16..].as_ptr().cast()) };
 
     // The actual key expansion.
     generate_round_keys::<0x01, 0>(&mut expanded_keys);
