@@ -44,12 +44,12 @@ impl Aes128Ctr64 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn from_seed_impl(key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) -> Self {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn from_seed_impl(key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) -> Self {
         let counter =
             ((u64::from_le_bytes(nonce) as u128) << 64) + u64::from_le_bytes(counter) as u128;
-        let counter = vreinterpretq_u64_u8(vld1q_u8(counter.to_le_bytes().as_ptr().cast()));
+        let counter =
+            unsafe { vreinterpretq_u64_u8(vld1q_u8(counter.to_le_bytes().as_ptr().cast())) };
         let round_keys: [uint8x16_t; AES128_KEY_COUNT] =
             aes_key_expansion::<AES128_KEY_SIZE, AES128_KEY_COUNT>(key);
 
@@ -59,12 +59,12 @@ impl Aes128Ctr64 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn seed_impl(&self, key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn seed_impl(&self, key: [u8; 16], nonce: [u8; 8], counter: [u8; 8]) {
         let counter =
             ((u64::from_le_bytes(nonce) as u128) << 64) + u64::from_le_bytes(counter) as u128;
-        let counter = vreinterpretq_u64_u8(vld1q_u8(counter.to_le_bytes().as_ptr().cast()));
+        let counter =
+            unsafe { vreinterpretq_u64_u8(vld1q_u8(counter.to_le_bytes().as_ptr().cast())) };
 
         let round_keys: [uint8x16_t; AES128_KEY_COUNT] =
             aes_key_expansion::<AES128_KEY_SIZE, AES128_KEY_COUNT>(key);
@@ -82,10 +82,8 @@ impl Aes128Ctr64 {
         u128::from_le_bytes(bytes) as u64
     }
 
-    #[cfg_attr(all(target_feature = "neon", target_feature = "aes"), inline(always))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn next_impl(&self) -> u128 {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
 
         // Increment the lower 64 bits using SIMD.
@@ -93,7 +91,7 @@ impl Aes128Ctr64 {
         let new_counter = vaddq_u64(counter, increment);
         self.counter.set(new_counter);
 
-        let rks = self.counter.as_array_of_cells();
+        let rks = self.round_keys.as_array_of_cells();
 
         // We apply the AES encryption on the counter.
         let mut state = vreinterpretq_u8_u64(counter);
@@ -110,7 +108,7 @@ impl Aes128Ctr64 {
         state = veorq_u8(state, rks[10].get());
 
         // Return the encrypted counter as u128.
-        *(&state as *const uint8x16_t as *const u128)
+        unsafe { *(&state as *const uint8x16_t as *const u128) }
     }
 }
 
@@ -153,9 +151,8 @@ impl Aes128Ctr128 {
         clone
     }
 
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn from_seed_impl(key: [u8; 16], counter: [u8; 16]) -> Self {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn from_seed_impl(key: [u8; 16], counter: [u8; 16]) -> Self {
         let counter = u128::from_le_bytes(counter);
         let round_keys: [uint8x16_t; AES128_KEY_COUNT] =
             aes_key_expansion::<AES128_KEY_SIZE, AES128_KEY_COUNT>(key);
@@ -165,9 +162,8 @@ impl Aes128Ctr128 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn seed_impl(&self, key: [u8; 16], counter: [u8; 16]) {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn seed_impl(&self, key: [u8; 16], counter: [u8; 16]) {
         let counter = u128::from_le_bytes(counter);
         let round_keys: [uint8x16_t; AES128_KEY_COUNT] =
             aes_key_expansion::<AES128_KEY_SIZE, AES128_KEY_COUNT>(key);
@@ -184,17 +180,15 @@ impl Aes128Ctr128 {
         self.counter.get()
     }
 
-    #[cfg_attr(all(target_feature = "neon", target_feature = "aes"), inline(always))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn next_impl(&self) -> u128 {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
         let rks = self.round_keys.as_array_of_cells();
 
         // We apply the AES encryption on the whitened counter.
-        let mut state = vld1q_u8(counter.to_le_bytes().as_ptr().cast());
+        let mut state = unsafe { vld1q_u8(counter.to_le_bytes().as_ptr().cast()) };
         state = vaesmcq_u8(vaeseq_u8(state, rks[0].get()));
         state = vaesmcq_u8(vaeseq_u8(state, rks[1].get()));
         state = vaesmcq_u8(vaeseq_u8(state, rks[2].get()));
@@ -208,7 +202,7 @@ impl Aes128Ctr128 {
         state = veorq_u8(state, rks[10].get());
 
         // Return the encrypted counter as u128.
-        *(&state as *const uint8x16_t as *const u128)
+        unsafe { *(&state as *const uint8x16_t as *const u128) }
     }
 }
 
@@ -239,12 +233,12 @@ impl Aes256Ctr64 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
         let counter =
             ((u64::from_le_bytes(nonce) as u128) << 64) + u64::from_le_bytes(counter) as u128;
-        let counter = vreinterpretq_u64_u8(vld1q_u8(counter.to_le_bytes().as_ptr().cast()));
+        let counter =
+            unsafe { vreinterpretq_u64_u8(vld1q_u8(counter.to_le_bytes().as_ptr().cast())) };
         let round_keys: [uint8x16_t; AES256_KEY_COUNT] =
             aes_key_expansion::<AES256_KEY_SIZE, AES256_KEY_COUNT>(key);
 
@@ -254,12 +248,12 @@ impl Aes256Ctr64 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn seed_impl(&self, key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn seed_impl(&self, key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) {
         let counter =
             ((u64::from_le_bytes(nonce) as u128) << 64) + u64::from_le_bytes(counter) as u128;
-        let counter = vreinterpretq_u64_u8(vld1q_u8(counter.to_le_bytes().as_ptr().cast()));
+        let counter =
+            unsafe { vreinterpretq_u64_u8(vld1q_u8(counter.to_le_bytes().as_ptr().cast())) };
         let round_keys: [uint8x16_t; AES256_KEY_COUNT] =
             aes_key_expansion::<AES256_KEY_SIZE, AES256_KEY_COUNT>(key);
 
@@ -276,10 +270,8 @@ impl Aes256Ctr64 {
         u128::from_le_bytes(bytes) as u64
     }
 
-    #[cfg_attr(all(target_feature = "neon", target_feature = "aes"), inline(always))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn next_impl(&self) -> u128 {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
         // Increment the lower 64 bits using SIMD.
         let increment = vcombine_u64(vdup_n_u64(1), vdup_n_u64(0));
@@ -307,7 +299,7 @@ impl Aes256Ctr64 {
         state = veorq_u8(state, rks[14].get());
 
         // Return the encrypted counter as u128.
-        *(&state as *const uint8x16_t as *const u128)
+        unsafe { *(&state as *const uint8x16_t as *const u128) }
     }
 }
 
@@ -350,9 +342,8 @@ impl Aes256Ctr128 {
         clone
     }
 
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn from_seed_impl(key: [u8; 32], counter: [u8; 16]) -> Self {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn from_seed_impl(key: [u8; 32], counter: [u8; 16]) -> Self {
         let counter = u128::from_le_bytes(counter);
         let round_keys: [uint8x16_t; AES256_KEY_COUNT] =
             aes_key_expansion::<AES256_KEY_SIZE, AES256_KEY_COUNT>(key);
@@ -362,9 +353,8 @@ impl Aes256Ctr128 {
         }
     }
 
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn seed_impl(&self, key: [u8; 32], counter: [u8; 16]) {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn seed_impl(&self, key: [u8; 32], counter: [u8; 16]) {
         let counter = u128::from_le_bytes(counter);
         let round_keys: [uint8x16_t; AES256_KEY_COUNT] =
             aes_key_expansion::<AES256_KEY_SIZE, AES256_KEY_COUNT>(key);
@@ -381,16 +371,15 @@ impl Aes256Ctr128 {
         self.counter.get()
     }
 
-    #[cfg_attr(all(target_feature = "neon", target_feature = "aes"), inline(always))]
-    #[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-    #[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-    pub(crate) unsafe fn next_impl(&self) -> u128 {
+    #[target_feature(enable = "aes", enable = "neon")]
+    pub(crate) fn next_impl(&self) -> u128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
         let rks = self.round_keys.as_array_of_cells();
+
         // We apply the AES encryption on the counter.
-        let mut state = vld1q_u8(counter.to_le_bytes().as_ptr().cast());
+        let mut state = unsafe { vld1q_u8(counter.to_le_bytes().as_ptr().cast()) };
         state = vaesmcq_u8(vaeseq_u8(state, rks[0].get()));
         state = vaesmcq_u8(vaeseq_u8(state, rks[1].get()));
         state = vaesmcq_u8(vaeseq_u8(state, rks[2].get()));
@@ -408,24 +397,24 @@ impl Aes256Ctr128 {
         state = veorq_u8(state, rks[14].get());
 
         // Return the encrypted counter as u128.
-        *(&state as *const uint8x16_t as *const u128)
+        unsafe { *(&state as *const uint8x16_t as *const u128) }
     }
 }
 
-#[cfg_attr(not(target_feature = "aes"), target_feature(enable = "aes"))]
-#[cfg_attr(not(target_feature = "neon"), target_feature(enable = "neon"))]
-pub unsafe fn aes_key_expansion<const L: usize, const N: usize>(key: [u8; L]) -> [uint8x16_t; N] {
-    let mut expanded_keys: [uint8x16_t; N] = core::mem::zeroed();
+#[target_feature(enable = "aes", enable = "neon")]
+pub fn aes_key_expansion<const L: usize, const N: usize>(key: [u8; L]) -> [uint8x16_t; N] {
+    let mut expanded_keys: [uint8x16_t; N] = unsafe { core::mem::zeroed() };
 
     let keys_ptr: *mut u32 = expanded_keys.as_mut_ptr().cast();
-    let keys_in_words = core::slice::from_raw_parts_mut(keys_ptr, N * AES_BLOCK_WORDS);
+    let keys_in_words = unsafe { core::slice::from_raw_parts_mut(keys_ptr, N * AES_BLOCK_WORDS) };
 
     for (i, chunk) in key.chunks_exact(AES_WORD_SIZE).enumerate() {
         keys_in_words[i] =
             u32::from_ne_bytes(chunk.try_into().expect("Invalid chunk size for u32"));
     }
 
-    unsafe fn sub_word(input: u32) -> u32 {
+    #[target_feature(enable = "aes", enable = "neon")]
+    fn sub_word(input: u32) -> u32 {
         let input = vreinterpretq_u8_u32(vdupq_n_u32(input));
         vgetq_lane_u32::<0>(vreinterpretq_u32_u8(vaeseq_u8(input, vdupq_n_u8(0))))
     }
