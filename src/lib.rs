@@ -178,6 +178,21 @@ pub use backend::x86::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
             any(target_arch = "x86_64", target_arch = "x86"),
         )),
         feature = "force_software",
+        all(
+            any(target_arch = "x86_64", target_arch = "x86"),
+            not(all(target_feature = "sse2", target_feature = "aes")),
+            not(feature = "std"),
+        ),
+        all(
+            target_arch = "aarch64",
+            not(all(target_feature = "neon", target_feature = "aes")),
+            not(feature = "std"),
+        ),
+        all(
+            target_arch = "riscv64",
+            feature = "experimental_riscv",
+            not(feature = "std"),
+        ),
     ),
     not(feature = "force_runtime_detection"),
     not(feature = "verification"),
