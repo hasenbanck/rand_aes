@@ -92,10 +92,7 @@ impl Aes128Ctr64 {
         let new_counter = _mm_add_epi64(counter, increment);
         self.counter.set(new_counter);
 
-        // SAFETY: `Cell<T>` has the same memory layout as `T`.
-        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
-            as *const [Cell<_>; AES128_KEY_COUNT]);
+        let rks = self.round_keys.as_array_of_cells();
 
         // Whitening the counter.
         let mut state = _mm_xor_si128(counter, rks[0].get());
@@ -192,10 +189,7 @@ impl Aes128Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        // SAFETY: `Cell<T>` has the same memory layout as `T`.
-        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
-            as *const [Cell<_>; AES128_KEY_COUNT]);
+        let rks = self.round_keys.as_array_of_cells();
 
         // Whitening the counter.
         let counter = _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast());
@@ -291,10 +285,7 @@ impl Aes256Ctr64 {
         let new_counter = _mm_add_epi64(counter, increment);
         self.counter.set(new_counter);
 
-        // SAFETY: `Cell<T>` has the same memory layout as `T`.
-        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
-            as *const [Cell<_>; AES256_KEY_COUNT]);
+        let rks = self.round_keys.as_array_of_cells();
 
         // Whitening the counter.
         let mut state = _mm_xor_si128(counter, rks[0].get());
@@ -395,10 +386,7 @@ impl Aes256Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        // SAFETY: `Cell<T>` has the same memory layout as `T`.
-        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
-            as *const [Cell<_>; AES256_KEY_COUNT]);
+        let rks = self.round_keys.as_array_of_cells();
 
         // Whitening the counter.
         let counter = _mm_loadu_si128(counter.to_le_bytes().as_ptr().cast());

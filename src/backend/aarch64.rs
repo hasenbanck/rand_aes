@@ -93,10 +93,7 @@ impl Aes128Ctr64 {
         let new_counter = vaddq_u64(counter, increment);
         self.counter.set(new_counter);
 
-        // SAFETY: `Cell<T>` has the same memory layout as `T`.
-        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
-            as *const [Cell<_>; AES128_KEY_COUNT]);
+        let rks = self.counter.as_array_of_cells();
 
         // We apply the AES encryption on the counter.
         let mut state = vreinterpretq_u8_u64(counter);
@@ -194,10 +191,7 @@ impl Aes128Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        // SAFETY: `Cell<T>` has the same memory layout as `T`.
-        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES128_KEY_COUNT]>
-            as *const [Cell<_>; AES128_KEY_COUNT]);
+        let rks = self.round_keys.as_array_of_cells();
 
         // We apply the AES encryption on the whitened counter.
         let mut state = vld1q_u8(counter.to_le_bytes().as_ptr().cast());
@@ -292,10 +286,7 @@ impl Aes256Ctr64 {
         let new_counter = vaddq_u64(counter, increment);
         self.counter.set(new_counter);
 
-        // SAFETY: `Cell<T>` has the same memory layout as `T`.
-        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
-            as *const [Cell<_>; AES256_KEY_COUNT]);
+        let rks = self.round_keys.as_array_of_cells();
 
         // We apply the AES encryption on the counter.
         let mut state = vreinterpretq_u8_u64(counter);
@@ -397,11 +388,7 @@ impl Aes256Ctr128 {
         let counter = self.counter.get();
         self.counter.set(counter.wrapping_add(1));
 
-        // SAFETY: `Cell<T>` has the same memory layout as `T`.
-        // Use `as_array_of_cells` once stable: https://github.com/rust-lang/rust/issues/88248
-        let rks = &*((&self.round_keys) as *const Cell<[_; AES256_KEY_COUNT]>
-            as *const [Cell<_>; AES256_KEY_COUNT]);
-
+        let rks = self.round_keys.as_array_of_cells();
         // We apply the AES encryption on the counter.
         let mut state = vld1q_u8(counter.to_le_bytes().as_ptr().cast());
         state = vaesmcq_u8(vaeseq_u8(state, rks[0].get()));
