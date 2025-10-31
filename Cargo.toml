@@ -47,7 +47,7 @@ rand_chacha = "0.9"
 rand_pcg = "0.9"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
-criterion = { version = "0.6", features = ["cargo_bench_support", "html_reports"] }
+criterion = { version = "0.7", features = ["cargo_bench_support", "html_reports"] }
 
 [profile.bench]
 opt-level = 3
@@ -56,7 +56,7 @@ lto = "fat"
 strip = true
 
 [[bench]]
-name = "rng"
+name = "benchmark_rng"
 harness = false
 
 [package.metadata.docs.rs]
