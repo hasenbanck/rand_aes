@@ -141,6 +141,21 @@ enum Aes128Ctr128Inner {
 pub struct Aes128Ctr128(Aes128Ctr128Inner);
 
 impl Aes128Ctr128 {
+    // This function is needed for the TLS.
+    #[cfg(all(feature = "tls", feature = "tls_aes128_ctr128"))]
+    pub(crate) fn zeroed() -> Self {
+        match has_hardware_acceleration() {
+            true => {
+                let hardware = Aes128Ctr128Hardware::zeroed();
+                Self(Aes128Ctr128Inner::Hardware(Box::new(hardware)))
+            }
+            false => {
+                let software = Aes128Ctr128Software::zeroed();
+                Self(Aes128Ctr128Inner::Software(Box::new(software)))
+            }
+        }
+    }
+
     pub(crate) fn jump_impl(&self) -> Self {
         let inner = match &self.0 {
             Aes128Ctr128Inner::Hardware(this) => {
@@ -231,6 +246,21 @@ enum Aes256Ctr64Inner {
 pub struct Aes256Ctr64(Aes256Ctr64Inner);
 
 impl Aes256Ctr64 {
+    // This function is needed for the TLS.
+    #[cfg(all(feature = "tls", feature = "tls_aes256_ctr64"))]
+    pub(crate) fn zeroed() -> Self {
+        match has_hardware_acceleration() {
+            true => {
+                let hardware = Aes256Ctr64Hardware::zeroed();
+                Self(Aes256Ctr64Inner::Hardware(Box::new(hardware)))
+            }
+            false => {
+                let software = Aes256Ctr64Software::zeroed();
+                Self(Aes256Ctr64Inner::Software(Box::new(software)))
+            }
+        }
+    }
+
     pub(crate) fn from_seed_impl(key: [u8; 32], nonce: [u8; 8], counter: [u8; 8]) -> Self {
         match has_hardware_acceleration() {
             true => {
@@ -297,6 +327,21 @@ enum Aes256Ctr128Inner {
 pub struct Aes256Ctr128(Aes256Ctr128Inner);
 
 impl Aes256Ctr128 {
+    // This function is needed for the TLS.
+    #[cfg(all(feature = "tls", feature = "tls_aes256_ctr128"))]
+    pub(crate) fn zeroed() -> Self {
+        match has_hardware_acceleration() {
+            true => {
+                let hardware = Aes256Ctr128Hardware::zeroed();
+                Self(Aes256Ctr128Inner::Hardware(Box::new(hardware)))
+            }
+            false => {
+                let software = Aes256Ctr128Software::zeroed();
+                Self(Aes256Ctr128Inner::Software(Box::new(software)))
+            }
+        }
+    }
+
     pub(crate) fn jump_impl(&self) -> Self {
         let inner = match &self.0 {
             Aes256Ctr128Inner::Hardware(this) => {
