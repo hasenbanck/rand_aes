@@ -297,77 +297,89 @@ impl Jump for Aes256Ctr128 {
 
 #[cfg(feature = "rand_core")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
-impl rand_core::RngCore for Aes128Ctr64 {
+impl rand_core::TryRng for Aes128Ctr64 {
+    type Error = rand_core::Infallible;
+
     #[inline(always)]
-    fn next_u32(&mut self) -> u32 {
-        safely_call! { self.next_impl() as u32 }
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        safely_call! { Ok(self.next_impl() as u32) }
     }
 
     #[inline(always)]
-    fn next_u64(&mut self) -> u64 {
-        safely_call! { self.next_impl() as u64 }
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        safely_call! { Ok(self.next_impl() as u64) }
     }
 
     #[inline(always)]
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Self::Error> {
         Random::fill_bytes(self, dest);
+        Ok(())
     }
 }
 
 #[cfg(feature = "rand_core")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
-impl rand_core::RngCore for Aes128Ctr128 {
+impl rand_core::TryRng for Aes128Ctr128 {
+    type Error = rand_core::Infallible;
+
     #[inline(always)]
-    fn next_u32(&mut self) -> u32 {
-        safely_call! { self.next_impl() as u32 }
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        safely_call! { Ok(self.next_impl() as u32) }
     }
 
     #[inline(always)]
-    fn next_u64(&mut self) -> u64 {
-        safely_call! { self.next_impl() as u64 }
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        safely_call! { Ok(self.next_impl() as u64) }
     }
 
     #[inline(always)]
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Self::Error> {
         Random::fill_bytes(self, dest);
+        Ok(())
     }
 }
 
 #[cfg(feature = "rand_core")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
-impl rand_core::RngCore for Aes256Ctr64 {
+impl rand_core::TryRng for Aes256Ctr64 {
+    type Error = rand_core::Infallible;
+
     #[inline(always)]
-    fn next_u32(&mut self) -> u32 {
-        safely_call! { self.next_impl() as u32 }
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        safely_call! { Ok(self.next_impl() as u32) }
     }
 
     #[inline(always)]
-    fn next_u64(&mut self) -> u64 {
-        safely_call! { self.next_impl() as u64 }
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        safely_call! { Ok(self.next_impl() as u64) }
     }
 
     #[inline(always)]
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Self::Error> {
         Random::fill_bytes(self, dest);
+        Ok(())
     }
 }
 
 #[cfg(feature = "rand_core")]
 #[cfg_attr(docsrs, doc(cfg(feature = "rand_core")))]
-impl rand_core::RngCore for Aes256Ctr128 {
+impl rand_core::TryRng for Aes256Ctr128 {
+    type Error = rand_core::Infallible;
+
     #[inline(always)]
-    fn next_u32(&mut self) -> u32 {
-        safely_call! { self.next_impl() as u32 }
+    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+        safely_call! { Ok(self.next_impl() as u32) }
     }
 
     #[inline(always)]
-    fn next_u64(&mut self) -> u64 {
-        safely_call! { self.next_impl() as u64 }
+    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+        safely_call! { Ok(self.next_impl() as u64) }
     }
 
     #[inline(always)]
-    fn fill_bytes(&mut self, dest: &mut [u8]) {
+    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Self::Error> {
         Random::fill_bytes(self, dest);
+        Ok(())
     }
 }
 
