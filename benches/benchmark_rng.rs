@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion, Throughput};
 use rand_aes::tls::{rand_fill_bytes, rand_seed_from_entropy, rand_u64};
 use rand_aes::{Aes128Ctr128, Aes128Ctr64, Aes256Ctr128, Aes256Ctr64};
-use rand_core::{RngCore, SeedableRng};
+use rand_core::{Rng, SeedableRng};
 use std::hint::black_box;
 
 fn criterion_benchmark(c: &mut Criterion) {

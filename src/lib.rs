@@ -9,7 +9,7 @@
 //!  4. [`Aes256Ctr128`]: Utilizes AES-256 encryption with a 128-bit counter.
 //!
 //! Common functionality is provided using the [`Random`] trait or the optionally provided
-//! [`rand_core::RngCore`] and [`rand_core::SeedableRng`] traits.
+//! [`rand_core::Rng`] and [`rand_core::SeedableRng`] traits.
 //!
 //! ## Optimal Performance
 //!

@@ -37,14 +37,14 @@ verification = ["std"]
 
 [dependencies]
 # Implements the `CoreRng` and `SeedableRng` traits.
-rand_core = { version = "0.9", optional = true }
+rand_core = { version = "0.10", optional = true }
 # Provides seeding from the OS entropy source.
 getrandom = { version = "0.3", optional = true }
 
 [dev-dependencies]
 hex-literal = "1.0"
-rand_chacha = "0.9"
-rand_pcg = "0.9"
+rand_chacha = "0.10"
+rand_pcg = "0.10"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 criterion = { version = "0.7", features = ["cargo_bench_support", "html_reports"] }
